@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Vapes & Spirits</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Specific Admin Layout Overrides */
+        body {
+            background-color: #f1f5f9;
+        }
+        .admin-layout {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+        .main-content {
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center">
+        <div class="login-box animate-fade-in-up">
+            <div class="text-center mb-8">
+                <i class="fa-solid fa-user-shield text-5xl text-indigo-500 mb-4"></i>
+                <h2 class="text-3xl font-extrabold text-slate-800">Admin Portal</h2>
+                <p class="text-slate-500 mt-2">Acceso restringido a personal autorizado</p>
+            </div>
+            <form id="loginForm" class="login-form space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Usuario</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <input type="text" id="username" class="w-full pl-10 pr-4 py-3 rounded-xl outline-none" placeholder="admin">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Contraseña</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" id="password" class="w-full pl-10 pr-4 py-3 rounded-xl outline-none" placeholder="••••••••">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-[1.02]">
+                    Ingresar al Panel
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel (Hidden by default) -->
+    <div id="adminPanel" class="admin-layout hidden">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="index.html" class="sidebar-brand">
+                <i class="fa-solid fa-dragon text-indigo-400"></i>
+                <span>Vape & Spirits</span>
+            </a>
+            
+            <ul class="sidebar-nav">
+                <li class="sidebar-link active" onclick="switchTab('dashboard')">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li class="sidebar-link" onclick="switchTab('products')">
+                    <i class="fa-solid fa-box-open"></i>
+                    <span>Inventario</span>
+                </li>
+                <li class="sidebar-link" onclick="switchTab('intelligence')">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>Inteligencia</span>
+                </li>
+            </ul>
+
+            <div class="mt-auto pt-6 border-t border-slate-700">
+                <div class="sidebar-link text-red-400 hover:bg-red-900/20" onclick="logout()">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Cerrar Sesión</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            
+            <!-- Dashboard Tab -->
+            <div id="dashboardSection" class="panel-section active">
+                <div class="admin-header">
+                    <h2>Resumen General</h2>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-slate-500" id="currentDate"></span>
+                    </div>
+                </div>
+
+                <div class="dashboard-cards">
+                    <div class="stat-card">
+                        <div class="stat-title">Total Productos</div>
+                        <div class="stat-value" id="totalProducts">0</div>
+                        <i class="fa-solid fa-boxes-stacked absolute bottom-4 right-4 text-slate-100 text-6xl -z-0"></i>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Valor Inventario</div>
+                        <div class="stat-value text-emerald-600" id="inventoryValue">/usr/bin/zsh</div>
+                        <i class="fa-solid fa-sack-dollar absolute bottom-4 right-4 text-emerald-50 text-6xl -z-0"></i>
+                    </div>
+                    <div class="stat-card border-orange-200">
+                        <div class="stat-title text-orange-600">Alerta Stock Bajo</div>
+                        <div class="stat-value text-orange-600" id="lowStockCount">0</div>
+                        <i class="fa-solid fa-triangle-exclamation absolute bottom-4 right-4 text-orange-50 text-6xl -z-0"></i>
+                    </div>
+                </div>
+
+                <!-- New Functionality Widget: Low Stock List -->
+               <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-indigo-500"></i> Ventas Recientes
+                        </h3>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-fire text-orange-500"></i> Productos por Agotarse
+                        </h3>
+                        <div class="overflow-y-auto max-h-[300px]">
+                            <table class="w-full">
+                                <thead class="bg-slate-50 sticky top-0">
+                                    <tr>
+                                        <th class="py-2 px-3 text-xs">Producto</th>
+                                        <th class="py-2 px-3 text-xs">Stock</th>
+                                        <th class="py-2 px-3 text-xs">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lowStockList">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                            <div id="noLowStockMsg" class="hidden text-center py-8 text-slate-400 text-sm">
+                                Todo en orden, inventario saludable.
+                            </div>
+                        </div>
+                    </div>
+               </div>
+            </div>
+
+            <!-- Products Tab -->
+            <div id="productsSection" class="panel-section">
+                <div class="admin-header">
+                    <h2>Gestión de Inventario</h2>
+                    <div class="flex gap-3">
+                        <button onclick="exportToCSV()" class="btn-secondary flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">
+                            <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                        </button>
+                        <button onclick="openProductModal()" class="btn-primary flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                            <i class="fa-solid fa-plus"></i> Nuevo Producto
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Nombre</th>
+                                <th>Categoría</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTable">
+                            <!-- JS Populates this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Business Intelligence Tab -->
+            <div id="intelligenceSection" class="panel-section">
+                 <div class="admin-header">
+                    <h2>Inteligencia de Negocio</h2>
+                    <p class="text-sm text-slate-500">Análisis predictivo y métricas de rendimiento</p>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Metric Card 1 -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden group">
+                        <div class="z-10 relative">
+                            <p class="text-slate-500 font-medium text-sm mb-1">Ticket Promedio Estimado</p>
+                            <h3 class="text-2xl font-bold text-slate-800">$185.000</h3>
+                            <div class="mt-2 flex items-center text-xs text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded">
+                                <i class="fa-solid fa-arrow-trend-up mr-1"></i> +12% vs mes anterior
+                            </div>
+                        </div>
+                        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-50 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                        <i class="fa-solid fa-receipt absolute right-4 bottom-4 text-indigo-200 text-4xl"></i>
+                    </div>
+
+                    <!-- Metric Card 2 -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden group">
+                        <div class="z-10 relative">
+                            <p class="text-slate-500 font-medium text-sm mb-1">Productos Estrella</p>
+                            <h3 class="text-2xl font-bold text-slate-800" id="topCategoryDisplay">Vapes</h3>
+                            <div class="mt-2 text-xs text-slate-400">
+                                Categoría con mayor rotación
+                            </div>
+                        </div>
+                         <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-orange-50 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                        <i class="fa-solid fa-star absolute right-4 bottom-4 text-orange-200 text-4xl"></i>
+                    </div>
+
+                     <!-- Metric Card 3 -->
+                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden group">
+                        <div class="z-10 relative">
+                            <p class="text-slate-500 font-medium text-sm mb-1">Salud del Inventario</p>
+                            <h3 class="text-2xl font-bold text-emerald-600" id="healthScore">94%</h3>
+                            <div class="mt-2 text-xs text-slate-400">
+                                Óptimo nivel de stock
+                            </div>
+                        </div>
+                        <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-50 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                        <i class="fa-solid fa-heart-pulse absolute right-4 bottom-4 text-emerald-200 text-4xl"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Distribution Chart -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-indigo-500"></i> Distribución de Valor por Categoría
+                        </h3>
+                        <div class="h-64 flex justify-center">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- AI Insights List -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-6 flex items-center gap-2">
+                             <i class="fa-solid fa-robot text-purple-500"></i> Insights IA
+                        </h3>
+                        <div class="space-y-4" id="aiInsightsList">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 m-4 animate-scale-in">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-800" id="modalTitle">Nuevo Producto</h3>
+                <button onclick="closeProductModal()" class="text-slate-400 hover:text-slate-600 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form id="addProductForm" class="space-y-4">
+                <input type="hidden" id="productId">
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del Producto</label>
+                    <input type="text" id="pName" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Precio ($)</label>
+                        <input type="number" id="pPrice" required step="0.01" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Stock</label>
+                        <input type="number" id="pStock" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
+                    <select id="pCategory" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="vapes">Vapes Desechables</option>
+                        <option value="liquids">E-Liquids</option>
+                        <option value="kits">Kits & Mods</option>
+                        <option value="accessories">Accesorios</option>
+                        <option value="spirits">Licores Premium</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">URL Imagen</label>
+                    <input type="url" id="pImage" placeholder="https://..." class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closeProductModal()" class="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                        Guardar Producto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+        // Simple Tab Switcher (moved inline for ease, or triggers admin.js logic if extended)
+        function switchTab(tabId) {
+            // Update Sidebar UI
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            // Hide all sections
+            document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+            
+            // Show target section
+            if(tabId === 'dashboard') document.getElementById('dashboardSection').classList.add('active');
+            if(tabId === 'products') document.getElementById('productsSection').classList.add('active');
+            if(tabId === 'intelligence') {
+                document.getElementById('intelligenceSection').classList.add('active');
+                if(window.Admin && window.Admin.renderIntelligence) {
+                    window.Admin.renderIntelligence();
+                }
+            }
+        }
+
+        // Set Date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('es-ES', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        });
+    </script>
+</body>
+</html>

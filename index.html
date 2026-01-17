@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vape & Spirits | Premium Store</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container nav-flex">
+            <div class="logo">Vape&Spirits</div>
+            <div class="nav-toggle" id="navToggle"><i class="fas fa-bars"></i></div>
+            <nav>
+                <ul class="nav-links" id="navLinks">
+                    <li class="nav-item">Inicio</li>
+                    <li class="nav-item" onclick="filterBy('vapes')">Vapes</li>
+                    <li class="nav-item" onclick="filterBy('whiskys')">Spirits</li>
+                    <li class="nav-item" onclick="filterBy('promos')">Ofertas</li>
+                </ul>
+            </nav>
+            <div class="cart-icon-container" id="cartBtn">
+                <i class="fas fa-shopping-cart fa-lg"></i>
+                <div class="cart-badge" id="cartCount">0</div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>Elevando tu Experiencia<br>al Siguiente Nivel</h1>
+                <p>Descubre nuestra exclusiva selección de vapes premium y licores importados. Calidad garantizada en cada producto.</p>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <a href="#catalogo" class="btn btn-primary">Ver Catálogo</a>
+                    <a href="#features" class="btn btn-secondary">Conocer Más</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="container features">
+            <div class="feature-card">
+                <i class="fas fa-wind feature-icon"></i>
+                <h3 class="feature-title">Vapeo Premium</h3>
+                <p>Dispositivos de última generación y e-liquids con los mejores sabores del mercado.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-glass-whiskey feature-icon"></i>
+                <h3 class="feature-title">Licores Selectos</h3>
+                <p>Whiskys añejos, ginebras artesanales y rones reserva importados.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-shipping-fast feature-icon"></i>
+                <h3 class="feature-title">Envío Rápido</h3>
+                <p>Recibe tu pedido en menos de 24 horas en zonas de cobertura.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fas fa-shield-alt feature-icon"></i>
+                <h3 class="feature-title">Garantía Total</h3>
+                <p>Productos 100% originales y soporte técnico garantizado.</p>
+            </div>
+        </section>
+
+        <section id="catalogo" class="container">
+            <h2 class="section-title">Nuestra Colección</h2>
+            
+            <div class="filters" id="categoryFilters">
+                <button class="filter-btn active" data-category="all">Todos</button>
+                <button class="filter-btn" data-category="vapes">Vapes</button>
+                <button class="filter-btn" data-category="eliquids">E-Liquids</button>
+                <button class="filter-btn" data-category="whiskys">Whiskys</button>
+                <button class="filter-btn" data-category="rones">Rones</button>
+                <button class="filter-btn" data-category="gin">Gin</button>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <!-- Products will be injected here via JS -->
+                 <p style="grid-column: 1/-1; text-align: center;">Cargando productos...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h3>Vape&Spirits</h3>
+                    <p style="color: #94a3b8; margin-bottom: 1rem;">La tienda online líder en productos de vapeo y licores premium. Experiencia y calidad garantizada.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h3>Navegación</h3>
+                    <ul>
+                        <li><a href="#">Inicio</a></li>
+                        <li><a href="#catalogo">Catálogo</a></li>
+                        <li><a href="#">Ofertas</a></li>
+                        <li><a href="#">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>Legal</h3>
+                    <ul>
+                        <li><a href="#">Términos y Condiciones</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Envíos y Devoluciones</a></li>
+                        
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>Contacto</h3>
+                    <ul>
+                        <li><i class="fas fa-map-marker-alt"></i> Medellín, Colombia</li>
+                        <li><i class="fas fa-phone"></i> +57 300 123 4567</li>
+                        <li><i class="fas fa-envelope"></i> info@vapespirit.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2026 Vape&Spirits. Todos los derechos reservados. Prohibida la venta a menores de edad.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-overlay" id="cartOverlay"></div>
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h3>Tu Carrito</h3>
+            <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <!-- Cart items injected here -->
+             <div style="text-align: center; margin-top: 2rem; color: #64748b;">Tu carrito está vacío</div>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <span>Total:</span>
+                <span id="cartTotal">/usr/bin/zsh.00</span>
+            </div>
+            <button class="btn btn-primary btn-checkout" id="checkoutBtn">
+                <i class="fab fa-whatsapp"></i> Pedir por WhatsApp
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/cart.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Mobile Menu Logic
+        const navToggle = document.getElementById('navToggle');
+        const navLinks = document.getElementById('navLinks');
+        
+        navToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        // Close menu when clicking a link
+        document.querySelectorAll('.nav-item').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+            });
+        });
+
+        function filterBy(cat) {
+            // Helper for nav clicks
+            const btn = document.querySelector(`.filter-btn[data-category="${cat}"]`);
+            if(btn) btn.click();
+            document.getElementById('catalogo').scrollIntoView({behavior: 'smooth'});
+        }
+    </script>
+</body>
+</html>
