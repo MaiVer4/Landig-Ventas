@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vape & Spirits | Premium Store</title>
+    <meta name="description" content="NovaMarket: Tu tienda online en Colombia con la mejor selección de tecnología, moda, hogar y mucho más. Envíos rápidos y seguros.">
+    <meta name="keywords" content="compras online, ecommerce colombia, tecnologia, moda, hogar, deportes, ofertas">
+    <title>NovaMarket | Lo mejor en Tecnología, Moda y Hogar</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,14 +15,14 @@
 <body>
     <header>
         <div class="container nav-flex">
-            <div class="logo">Vape&Spirits</div>
+            <div class="logo">NovaMarket</div>
             <div class="nav-toggle" id="navToggle"><i class="fas fa-bars"></i></div>
             <nav>
                 <ul class="nav-links" id="navLinks">
                     <li class="nav-item">Inicio</li>
-                    <li class="nav-item" onclick="filterBy('vapes')">Vapes</li>
-                    <li class="nav-item" onclick="filterBy('whiskys')">Spirits</li>
-                    <li class="nav-item" onclick="filterBy('promos')">Ofertas</li>
+                    <li class="nav-item" onclick="filterBy('tecnologia')">Tecnología</li>
+                    <li class="nav-item" onclick="filterBy('moda')">Moda</li>
+                    <li class="nav-item" onclick="filterBy('hogar')">Hogar</li>
                 </ul>
             </nav>
             <div class="cart-icon-container" id="cartBtn">
@@ -33,35 +35,35 @@
     <main>
         <section class="hero">
             <div class="container">
-                <h1>Elevando tu Experiencia<br>al Siguiente Nivel</h1>
-                <p>Descubre nuestra exclusiva selección de vapes premium y licores importados. Calidad garantizada en cada producto.</p>
+                <h1>El Universo de Compras<br>a un Click</h1>
+                <p>Explora miles de productos en tecnología, moda y hogar con los mejores precios de Colombia. Tu satisfacción es nuestra prioridad.</p>
                 <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="#catalogo" class="btn btn-primary">Ver Catálogo</a>
-                    <a href="#features" class="btn btn-secondary">Conocer Más</a>
+                    <a href="#catalogo" class="btn btn-primary">Ver Ofertas</a>
+                    <a href="#features" class="btn btn-secondary">Beneficios</a>
                 </div>
             </div>
         </section>
 
         <section id="features" class="container features">
             <div class="feature-card">
-                <i class="fas fa-wind feature-icon"></i>
-                <h3 class="feature-title">Vapeo Premium</h3>
-                <p>Dispositivos de última generación y e-liquids con los mejores sabores del mercado.</p>
+                <i class="fas fa-truck-fast feature-icon"></i>
+                <h3 class="feature-title">Envíos Nacionales</h3>
+                <p>Llegamos a cada rincón del país con nuestros aliados logísticos de confianza.</p>
             </div>
             <div class="feature-card">
-                <i class="fas fa-glass-whiskey feature-icon"></i>
-                <h3 class="feature-title">Licores Selectos</h3>
-                <p>Whiskys añejos, ginebras artesanales y rones reserva importados.</p>
+                <i class="fas fa-lock feature-icon"></i>
+                <h3 class="feature-title">Compra Segura</h3>
+                <p>Tu información está protegida con cifrado de extremo a extremo.</p>
             </div>
             <div class="feature-card">
-                <i class="fas fa-shipping-fast feature-icon"></i>
+                <i class="fas fa-clock feature-icon"></i>
                 <h3 class="feature-title">Envío Rápido</h3>
-                <p>Recibe tu pedido en menos de 24 horas en zonas de cobertura.</p>
+                <p>Procesamos tus pedidos el mismo día para entregas record.</p>
             </div>
             <div class="feature-card">
-                <i class="fas fa-shield-alt feature-icon"></i>
+                <i class="fas fa-medal feature-icon"></i>
                 <h3 class="feature-title">Garantía Total</h3>
-                <p>Productos 100% originales y soporte técnico garantizado.</p>
+                <p>Todos nuestros productos cuentan con garantía directa de fábrica.</p>
             </div>
         </section>
 
@@ -70,11 +72,10 @@
             
             <div class="filters" id="categoryFilters">
                 <button class="filter-btn active" data-category="all">Todos</button>
-                <button class="filter-btn" data-category="vapes">Vapes</button>
-                <button class="filter-btn" data-category="eliquids">E-Liquids</button>
-                <button class="filter-btn" data-category="whiskys">Whiskys</button>
-                <button class="filter-btn" data-category="rones">Rones</button>
-                <button class="filter-btn" data-category="gin">Gin</button>
+                <button class="filter-btn" data-category="tecnologia">Tecnología</button>
+                <button class="filter-btn" data-category="moda">Moda</button>
+                <button class="filter-btn" data-category="hogar">Hogar</button>
+                <button class="filter-btn" data-category="deportes">Deportes</button>
             </div>
 
             <div class="products-grid" id="productsGrid">
@@ -88,8 +89,8 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
-                    <h3>Vape&Spirits</h3>
-                    <p style="color: #94a3b8; margin-bottom: 1rem;">La tienda online líder en productos de vapeo y licores premium. Experiencia y calidad garantizada.</p>
+                    <h3>NovaMarket</h3>
+                    <p style="color: #94a3b8; margin-bottom: 1rem;">Tu plataforma de confianza para encontrar todo lo que necesitas al mejor precio del mercado.</p>
                     <div class="social-links">
                         <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
                         <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
@@ -119,12 +120,12 @@
                     <ul>
                         <li><i class="fas fa-map-marker-alt"></i> Medellín, Colombia</li>
                         <li><i class="fas fa-phone"></i> +57 300 123 4567</li>
-                        <li><i class="fas fa-envelope"></i> info@vapespirit.com</li>
+                        <li><i class="fas fa-envelope"></i> info@novamarket.com.co</li>
                     </ul>
                 </div>
             </div>
             <div class="copyright">
-                &copy; 2026 Vape&Spirits. Todos los derechos reservados. Prohibida la venta a menores de edad.
+                &copy; 2026 NovaMarket. Todos los derechos reservados.
             </div>
         </div>
     </footer>

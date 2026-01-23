@@ -1,92 +1,110 @@
 [
   {
     "id": 1,
-    "name": "Vape Pod System X",
-    "description": "Compacto, batería 1000mAh, recargable.",
-    "price": 180000,
-    "image": "https://images.unsplash.com/photo-1579165466949-3180a3d056d5?auto=format&fit=crop&w=400&q=80",
-    "stock": 50,
-    "category": "vapes"
+    "name": "Smartphone Galaxy S23 Ultra",
+    "description": "256GB, Cámara de 200MP, Pantalla AMOLED 6.8\".",
+    "price": 4500000,
+    "image": "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=400&q=80",
+    "stock": 15,
+    "category": "tecnologia"
   },
   {
     "id": 2,
-    "name": "E-Liquid Frutos Rojos",
-    "description": "Sabor intenso a fresa y frambuesa. 60ml.",
-    "price": 60000,
-    "image": "https://images.unsplash.com/photo-1541740924976-799359e2b694?auto=format&fit=crop&w=400&q=80",
-    "stock": 100,
-    "category": "eliquids"
+    "name": "Auriculares Sony WH-1000XM5",
+    "description": "Cancelación de ruido líder en la industria.",
+    "price": 1200000,
+    "image": "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=400&q=80",
+    "stock": 30,
+    "category": "tecnologia"
   },
   {
     "id": 3,
-    "name": "Whisky Single Malt 12Y",
-    "description": "Añejado 12 años, notas de roble y vainilla.",
-    "price": 260000,
-    "image": "https://images.unsplash.com/photo-1527281400683-1aae777175f8?auto=format&fit=crop&w=400&q=80",
-    "stock": 20,
-    "category": "whiskys"
+    "name": "Zapatillas Nike Air Max",
+    "description": "Comodidad y estilo para el día a día.",
+    "price": 450000,
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80",
+    "stock": 50,
+    "category": "moda"
   },
   {
     "id": 4,
-    "name": "Kit Inicio Vape Pro",
-    "description": "Todo lo que necesitas: Mod + Tanque + Baterías.",
-    "price": 340000,
-    "image": "https://images.unsplash.com/photo-1537497143615-385d58f3f40f?auto=format&fit=crop&w=400&q=80",
-    "stock": 15,
-    "category": "vapes"
+    "name": "Camiseta Básica Algodón Premium",
+    "description": "Pack x3, 100% algodón, corte regular.",
+    "price": 120000,
+    "image": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=400&q=80",
+    "stock": 100,
+    "category": "moda"
   },
   {
     "id": 5,
-    "name": "Ron Añejo Reserva",
-    "description": "Sabor caribeño, ideal para cócteles premium.",
-    "price": 160000,
-    "image": "https://images.unsplash.com/photo-1614313511387-1436a4480ebb?auto=format&fit=crop&w=400&q=80",
-    "stock": 30,
-    "category": "rones"
+    "name": "Cafetera Express Automática",
+    "description": "Prepara capuchinos y lattes en segundos.",
+    "price": 850000,
+    "image": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=400&q=80",
+    "stock": 20,
+    "category": "hogar"
   },
   {
     "id": 6,
-    "name": "Gin Botánico Artesanal",
-    "description": "Destilado con 12 botánicos seleccionados.",
-    "price": 220000,
-    "image": "https://images.unsplash.com/photo-1560963689-02e0d37e5aa0?auto=format&fit=crop&w=400&q=80",
+    "name": "Robot Aspiradora Inteligente",
+    "description": "Mapeo láser, control por app y voz.",
+    "price": 1100000,
+    "image": "https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=400&q=80",
     "stock": 25,
-    "category": "gin"
+    "category": "hogar"
   },
   {
     "id": 7,
-    "name": "E-Liquid Mentol Ice",
-    "description": "Frescura extrema, golpe de garganta suave.",
-    "price": 48000,
-    "image": "https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?auto=format&fit=crop&w=400&q=80",
-    "stock": 80,
-    "category": "eliquids"
+    "name": "Set Mancuernas Ajustables",
+    "description": "De 2kg a 24kg, sistema de selección rápida.",
+    "price": 600000,
+    "image": "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=400&q=80",
+    "stock": 10,
+    "category": "deportes"
   },
   {
     "id": 8,
-    "name": "Vape Pen Desechable 5000",
-    "description": "5000 puffs, sabor sandía ice.",
-    "price": 72000,
-    "image": "https://images.unsplash.com/photo-1563820299656-74fc2dfb7e32?auto=format&fit=crop&w=400&q=80",
-    "stock": 200,
-    "category": "vapes"
+    "name": "Bicicleta de Montaña 29\"",
+    "description": "Suspensión delantera, frenos de disco hidráulicos.",
+    "price": 1800000,
+    "image": "https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=400&q=80",
+    "stock": 5,
+    "category": "deportes"
   },
   {
     "id": 9,
-    "name": "Tequila Reposado",
-    "description": "100% Agave azul, reposado 6 meses.",
-    "price": 240000,
-    "image": "https://images.unsplash.com/photo-1582294109312-68eb129e9d6d?auto=format&fit=crop&w=400&q=80",
-    "stock": 18,
-    "category": "otros"
+    "name": "Consola PlayStation 5",
+    "description": "Edición Digital, 825GB SSD, Mando DualSense.",
+    "price": 2800000,
+    "image": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=400&q=80",
+    "stock": 12,
+    "category": "tecnologia"
   },
   {
     "id": 10,
-    "name": "Resistencias Mesh Coil (Pack 5)",
-    "description": "0.15ohm, para sabor y vapor denso.",
-    "price": 80000,
-    "image": "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&q=80",
-    "stock": 50,
-    "category": "accesorios"
+    "name": "Juego de Sábanas King Size",
+    "description": "400 hilos, algodón egipcio, ultra suave.",
+    "price": 220000,
+    "image": "https://images.unsplash.com/photo-1522771753035-4a50423a5a63?auto=format&fit=crop&w=400&q=80",
+    "stock": 40,
+    "category": "hogar"
+  },
+   {
+    "id": 11,
+    "name": "Reloj Inteligente Series 8",
+    "description": "Monitor de salud, GPS, resistente al agua.",
+    "price": 1500000,
+    "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80",
+    "stock": 35,
+    "category": "tecnologia"
+  },
+  {
+    "id": 12,
+    "name": "Mochila Impermeable Laptop",
+    "description": "Puerto USB de carga, antirrobo.",
+    "price": 180000,
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=400&q=80",
+    "stock": 60,
+    "category": "moda"
   }
 ]

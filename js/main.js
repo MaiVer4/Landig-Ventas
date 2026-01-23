@@ -8,8 +8,8 @@ const ProductManager = {
         
         if (storedProducts) {
             this.products = JSON.parse(storedProducts);
-             // Migration check
-             if (this.products.length > 0 && (this.products[0].category === 'tecnologia' || this.products[0].price < 1000)) {
+             // Migration check for General Store update
+             if (this.products.length > 0 && this.products[0].category === 'vapes') {
                 shouldReload = true;
             }
         } else {
