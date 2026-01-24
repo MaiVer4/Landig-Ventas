@@ -1,0 +1,8 @@
+# robots.txt para NovaMarket
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /js/admin.js
+
+# Sitemap
+Sitemap: https://maiver4.github.io/Landig-Ventas/sitemap.xml

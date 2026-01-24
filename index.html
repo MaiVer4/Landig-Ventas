@@ -3,14 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="NovaMarket: Tu tienda online en Colombia con la mejor selección de tecnología, moda, hogar y mucho más. Envíos rápidos y seguros.">
-    <meta name="keywords" content="compras online, ecommerce colombia, tecnologia, moda, hogar, deportes, ofertas">
-    <title>NovaMarket | Lo mejor en Tecnología, Moda y Hogar</title>
-    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Primary Meta Tags -->
+    <title>NovaMarket Colombia | Tienda Online de Tecnología, Moda y Hogar | Envíos Rápidos</title>
+    <meta name="title" content="NovaMarket Colombia | Tienda Online de Tecnología, Moda y Hogar | Envíos Rápidos">
+    <meta name="description" content="Descubre NovaMarket, tu tienda online líder en Colombia. Compra tecnología de última generación, moda exclusiva y artículos para el hogar. Envíos nacionales rápidos, pagos seguros y garantía total. ¡Compra ahora!">
+    <meta name="keywords" content="tienda online colombia, ecommerce colombia, comprar tecnologia online, moda colombia, articulos hogar, deportes colombia, ofertas online, envios rapidos colombia, compras seguras">
+    <meta name="author" content="NovaMarket">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://maiver4.github.io/Landig-Ventas/">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://maiver4.github.io/Landig-Ventas/">
+    <meta property="og:title" content="NovaMarket Colombia | Tienda Online de Tecnología, Moda y Hogar">
+    <meta property="og:description" content="Descubre miles de productos en tecnología, moda y hogar. Envíos rápidos a toda Colombia. Tu satisfacción es nuestra prioridad.">
+    <meta property="og:image" content="https://maiver4.github.io/Landig-Ventas/images/og-image.jpg">
+    <meta property="og:locale" content="es_CO">
+    <meta property="og:site_name" content="NovaMarket">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://maiver4.github.io/Landig-Ventas/">
+    <meta name="twitter:title" content="NovaMarket Colombia | Tienda Online">
+    <meta name="twitter:description" content="Tecnología, moda y hogar con envíos rápidos a toda Colombia">
+    <meta name="twitter:image" content="https://maiver4.github.io/Landig-Ventas/images/twitter-card.jpg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    
+    <!-- Performance & Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "OnlineStore",
+      "name": "NovaMarket",
+      "description": "Tienda online líder en Colombia con productos de tecnología, moda, hogar y deportes",
+      "url": "https://maiver4.github.io/Landig-Ventas",
+      "logo": "https://maiver4.github.io/Landig-Ventas/logo.png",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Medellín",
+        "addressCountry": "CO"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+57-321-939-5309",
+        "contactType": "Customer Service",
+        "availableLanguage": "Spanish"
+      },
+      "sameAs": [
+        "https://facebook.com/novamarket",
+        "https://instagram.com/novamarket",
+        "https://wa.me/573219395309"
+      ]
+    }
+    </script>
 </head>
 <body>
     <header>
@@ -25,27 +81,27 @@
                     <li class="nav-item" onclick="filterBy('hogar')">Hogar</li>
                 </ul>
             </nav>
-            <div class="cart-icon-container" id="cartBtn">
-                <i class="fas fa-shopping-cart fa-lg"></i>
-                <div class="cart-badge" id="cartCount">0</div>
-            </div>
+            <button class="cart-icon-container" id="cartBtn" aria-label="Abrir carrito de compras" style="background: none; border: none; cursor: pointer;">
+                <i class="fas fa-shopping-cart fa-lg" aria-hidden="true"></i>
+                <div class="cart-badge" id="cartCount" aria-live="polite">0</div>
+            </button>
         </div>
     </header>
 
     <main>
-        <section class="hero">
+        <section class="hero" aria-label="Sección principal">
             <div class="container">
                 <h1>El Universo de Compras<br>a un Click</h1>
-                <p>Explora miles de productos en tecnología, moda y hogar con los mejores precios de Colombia. Tu satisfacción es nuestra prioridad.</p>
+                <p>Explora miles de productos en tecnología, moda y hogar con los mejores precios de Colombia. Envíos rápidos, pagos seguros y garantía total. Tu satisfacción es nuestra prioridad.</p>
                 <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="#catalogo" class="btn btn-primary px-8 py-3 text-lg">
-                        Explorar Catálogo <i class="fas fa-arrow-right ml-2"></i>
+                    <a href="#catalogo" class="btn btn-primary px-8 py-3 text-lg" aria-label="Ver catálogo de productos">
+                        Explorar Catálogo <i class="fas fa-arrow-right ml-2" aria-hidden="true"></i>
                     </a>
                 </div>
             </div>
         </section>
 
-        <section id="features" class="container features">
+        <section id="features" class="container features" aria-label="Características del servicio">
             <div class="feature-card">
                 <i class="fas fa-truck-fast feature-icon"></i>
                 <h3 class="feature-title">Envíos Nacionales</h3>
@@ -68,7 +124,7 @@
             </div>
         </section>
 
-        <section id="catalogo" class="container">
+        <section id="catalogo" class="container" aria-label="Catálogo de productos">
             <h2 class="section-title">Nuestra Colección</h2>
             
             <div class="filters" id="categoryFilters">
@@ -85,7 +141,7 @@
         </section>
     </main>
 
-    <footer>
+    <footer role="contentinfo" aria-label="Pie de página">
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
@@ -131,11 +187,11 @@
     </footer>
 
     <!-- Cart Sidebar -->
-    <div class="cart-overlay" id="cartOverlay"></div>
-    <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-overlay" id="cartOverlay" aria-hidden="true"></div>
+    <aside class="cart-sidebar" id="cartSidebar" role="dialog" aria-label="Carrito de compras" aria-modal="true">
         <div class="cart-header">
-            <h3>Tu Carrito</h3>
-            <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
+            <h3 id="cartTitle">Tu Carrito</h3>
+            <button class="close-cart" id="closeCartBtn" aria-label="Cerrar carrito"><i class="fas fa-times" aria-hidden="true"></i></button>
         </div>
         <div class="cart-items" id="cartItems">
             <!-- Cart items injected here -->
@@ -150,7 +206,7 @@
                 <i class="fab fa-whatsapp"></i> Pedir por WhatsApp
             </button>
         </div>
-    </div>
+    </aside>
 
     <!-- Scripts -->
     <script src="js/cart.js"></script>
