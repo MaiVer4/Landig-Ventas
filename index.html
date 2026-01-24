@@ -38,8 +38,9 @@
                 <h1>El Universo de Compras<br>a un Click</h1>
                 <p>Explora miles de productos en tecnología, moda y hogar con los mejores precios de Colombia. Tu satisfacción es nuestra prioridad.</p>
                 <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="#catalogo" class="btn btn-primary">Ver Ofertas</a>
-                    <a href="#features" class="btn btn-secondary">Beneficios</a>
+                    <a href="#catalogo" class="btn btn-primary px-8 py-3 text-lg">
+                        Explorar Catálogo <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
                 </div>
             </div>
         </section>
@@ -71,11 +72,10 @@
             <h2 class="section-title">Nuestra Colección</h2>
             
             <div class="filters" id="categoryFilters">
-                <button class="filter-btn active" data-category="all">Todos</button>
-                <button class="filter-btn" data-category="tecnologia">Tecnología</button>
-                <button class="filter-btn" data-category="moda">Moda</button>
-                <button class="filter-btn" data-category="hogar">Hogar</button>
-                <button class="filter-btn" data-category="deportes">Deportes</button>
+                <!-- Buttons injected by main.js -->
+                 <div class="flex justify-center p-4 w-full text-slate-400">
+                     <i class="fas fa-spinner fa-spin"></i> Cargando...
+                </div>
             </div>
 
             <div class="products-grid" id="productsGrid">

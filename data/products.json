@@ -13,6 +13,7 @@
     "name": "Auriculares Sony WH-1000XM5",
     "description": "Cancelación de ruido líder en la industria.",
     "price": 1200000,
+    "isOffer": true,
     "image": "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=400&q=80",
     "stock": 30,
     "category": "tecnologia"
@@ -22,6 +23,7 @@
     "name": "Zapatillas Nike Air Max",
     "description": "Comodidad y estilo para el día a día.",
     "price": 450000,
+    "isOffer": true,
     "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80",
     "stock": 50,
     "category": "moda"
@@ -49,6 +51,7 @@
     "name": "Robot Aspiradora Inteligente",
     "description": "Mapeo láser, control por app y voz.",
     "price": 1100000,
+    "isOffer": true,
     "image": "https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=400&q=80",
     "stock": 25,
     "category": "hogar"
@@ -76,6 +79,7 @@
     "name": "Consola PlayStation 5",
     "description": "Edición Digital, 825GB SSD, Mando DualSense.",
     "price": 2800000,
+    "isOffer": true,
     "image": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=400&q=80",
     "stock": 12,
     "category": "tecnologia"

@@ -101,7 +101,10 @@ const Cart = {
     },
 
     checkout() {
-        if (this.items.length === 0) return;
+        if (this.items.length === 0) {
+            alert('El carrito está vacío');
+            return;
+        }
 
         let message = "Hola, me gustaría realizar el siguiente pedido:\n\n";
         let total = 0;
@@ -114,16 +117,51 @@ const Cart = {
 
         message += `\n*Total a pagar: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(total)}*`;
 
-        // Encode and open WhatsApp (Replace number with your storefront number)
-        // Using a dummy placeholder number 1234567890
-        const phoneNumber = "573001234567"; 
+        // 1. Save Order to LocalStorage for Admin
+        const newOrder = {
+            id: Date.now(),
+            date: new Date().toISOString(),
+            status: 'pending_whatsapp',
+            channel: 'whatsapp',
+            items: JSON.parse(JSON.stringify(this.items)), // Deep copy
+            total: total,
+            customer: 'Cliente Web'
+        };
+
+        console.log('🛒 Creando nuevo pedido:', newOrder);
+
+        let existingOrders;
+        try {
+            const ordersData = localStorage.getItem('orders');
+            console.log('📦 Pedidos existentes (raw):', ordersData);
+            existingOrders = ordersData ? JSON.parse(ordersData) : [];
+        } catch (err) {
+            console.error('❌ Error leyendo pedidos previos, se reinicia la lista', err);
+            existingOrders = [];
+        }
+
+        if (!Array.isArray(existingOrders)) {
+            console.warn('⚠️ Formato de pedidos inválido detectado, se crea lista nueva');
+            existingOrders = [];
+        }
+
+        existingOrders.push(newOrder);
+        const ordersJSON = JSON.stringify(existingOrders);
+        localStorage.setItem('orders', ordersJSON);
+        console.log('✅ Pedido guardado. Total de pedidos:', existingOrders.length);
+        console.log('📋 Contenido final en localStorage:', ordersJSON);
+
+        // 2. Open WhatsApp
+        const phoneNumber = "573219395309"; 
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
         
-        // Optional: clear cart after checkout
-        // this.items = [];
-        // this.save();
-        // this.render();
+        // 3. Clear cart
+        this.items = [];
+        this.save();
+        this.render();
+        this.close();
+        this.updateBadge();
     }
 };
 
