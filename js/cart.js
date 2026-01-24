@@ -2,6 +2,7 @@ const Cart = {
     items: [],
 
     init() {
+        console.log('🛒 Cart.js cargado correctamente');
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
             this.items = JSON.parse(savedCart);
@@ -167,6 +168,7 @@ const Cart = {
 
 // Event Listeners for Cart UI
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('📦 Inicializando Cart...');
     Cart.init();
 
     const cartBtn = document.getElementById('cartBtn');
@@ -174,8 +176,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartOverlay = document.getElementById('cartOverlay');
     const checkoutBtn = document.getElementById('checkoutBtn');
 
-    if (cartBtn) cartBtn.addEventListener('click', () => Cart.open());
-    if (closeCartBtn) closeCartBtn.addEventListener('click', () => Cart.close());
-    if (cartOverlay) cartOverlay.addEventListener('click', () => Cart.close());
-    if (checkoutBtn) checkoutBtn.addEventListener('click', () => Cart.checkout());
+    if (cartBtn) {
+        cartBtn.addEventListener('click', () => Cart.open());
+        console.log('✅ cartBtn listener attached');
+    } else {
+        console.error('❌ cartBtn not found');
+    }
+    
+    if (closeCartBtn) {
+        closeCartBtn.addEventListener('click', () => Cart.close());
+        console.log('✅ closeCartBtn listener attached');
+    } else {
+        console.error('❌ closeCartBtn not found');
+    }
+    
+    if (cartOverlay) {
+        cartOverlay.addEventListener('click', () => Cart.close());
+        console.log('✅ cartOverlay listener attached');
+    } else {
+        console.error('❌ cartOverlay not found');
+    }
+    
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', () => {
+            console.log('🚀 Checkout button clicked!');
+            Cart.checkout();
+        });
+        console.log('✅ checkoutBtn listener attached');
+    } else {
+        console.error('❌ checkoutBtn not found');
+    }
 });
