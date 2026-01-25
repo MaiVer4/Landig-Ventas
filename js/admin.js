@@ -15,8 +15,8 @@ const Admin = {
 
         if (storedProducts) {
             this.products = JSON.parse(storedProducts);
-            // Migration Check: If we see old vapes category, force reload
-            if (this.products.length > 0 && (this.products[0].category === 'vapes' || !this.products[0].category)) {
+            // Migration Check: ONLY if we see old vapes category (legacy data)
+            if (this.products.length > 0 && this.products[0].category === 'vapes') {
                 shouldReload = true;
             }
         } else {

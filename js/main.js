@@ -8,7 +8,7 @@ const ProductManager = {
         
         if (storedProducts) {
             this.products = JSON.parse(storedProducts);
-             // Migration check for General Store update
+             // Migration check ONLY for legacy 'vapes' category (old version)
              if (this.products.length > 0 && this.products[0].category === 'vapes') {
                 shouldReload = true;
             }
@@ -28,6 +28,15 @@ const ProductManager = {
                 document.getElementById('productsGrid').innerHTML = '<p>Error al cargar productos.</p>';
             }
         }
+        
+        // Ensure all products have gallery and reviews (add defaults if missing, without reloading)
+        this.products = this.products.map(p => ({
+            ...p,
+            gallery: p.gallery || [p.image, p.image, p.image],
+            reviews: p.reviews || [],
+            rating: p.rating || 0,
+            fullDescription: p.fullDescription || p.description
+        }));
         
         this.renderProducts('all');
     },
@@ -55,6 +64,7 @@ const ProductManager = {
         filtered.forEach(product => {
             const card = document.createElement('div');
             card.className = 'product-card';
+            card.setAttribute('data-product-id', product.id);
             
             // Offer Calc
             let priceHtml = '';
@@ -77,6 +87,14 @@ const ProductManager = {
             // Offer badge logic
             const offerBadge = product.isOffer ? `<div class="offer-sticker">-${product.discountPercent || 0}%</div>` : '';
             
+            // Rating stars
+            const ratingStars = product.rating ? `
+                <div class="product-card-rating">
+                    <span class="stars">${getStarsHtml(product.rating)}</span>
+                    <span class="rating-text">${product.rating}</span>
+                </div>
+            ` : '';
+            
             card.innerHTML = `
                 <div class="product-image-container relative">
                     ${offerBadge}
@@ -85,20 +103,177 @@ const ProductManager = {
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.name}</h3>
+                    ${ratingStars}
                     <p class="product-desc">${product.description}</p>
                     <div class="product-footer">
                         ${priceHtml}
                         ${product.stock > 0 
-                            ? `<button class="btn-add" onclick="addToCart(${product.id})" title="Añadir al carrito"><i class="fas fa-plus"></i></button>`
+                            ? `<button class="btn-add" onclick="event.stopPropagation(); addToCart(${product.id})" title="Añadir al carrito"><i class="fas fa-plus"></i></button>`
                             : `<button class="btn-secondary" style="font-size:0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px;" disabled>Agotado</button>`
                         }
                     </div>
                 </div>
             `;
+            
+            // Add click event to open product detail
+            card.addEventListener('click', () => openProductModal(product.id));
+            
             container.appendChild(card);
         });
     }
 };
+
+// Helper function to generate star icons
+function getStarsHtml(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    
+    let html = '';
+    for (let i = 0; i < fullStars; i++) {
+        html += '<i class="fas fa-star"></i>';
+    }
+    if (hasHalfStar) {
+        html += '<i class="fas fa-star-half-alt"></i>';
+    }
+    for (let i = 0; i < emptyStars; i++) {
+        html += '<i class="far fa-star"></i>';
+    }
+    return html;
+}
+
+// Product Modal Functions
+function openProductModal(productId) {
+    const product = ProductManager.products.find(p => p.id === productId);
+    if (!product) return;
+    
+    const modal = document.getElementById('productModal');
+    const overlay = document.getElementById('productModalOverlay');
+    
+    // Populate modal content
+    document.getElementById('modalCategory').textContent = product.category;
+    document.getElementById('modalTitle').textContent = product.name;
+    
+    // Rating
+    const ratingHtml = `
+        <span class="stars">${getStarsHtml(product.rating || 0)}</span>
+        <span class="rating-value">${product.rating || 'N/A'}</span>
+        <span class="rating-count">(${product.reviews ? product.reviews.length : 0} opiniones)</span>
+    `;
+    document.getElementById('modalRating').innerHTML = ratingHtml;
+    
+    // Description
+    document.getElementById('modalDescription').textContent = product.fullDescription || product.description;
+    
+    // Price
+    let priceHtml = '';
+    let finalPrice = product.price;
+    if (product.isOffer && product.discountPercent > 0) {
+        finalPrice = product.price * (1 - product.discountPercent / 100);
+        priceHtml = `
+            <span class="current-price">${formatPrice(finalPrice)}</span>
+            <span class="original-price">${formatPrice(product.price)}</span>
+            <span class="discount-badge">-${product.discountPercent}%</span>
+        `;
+    } else {
+        priceHtml = `<span class="current-price">${formatPrice(product.price)}</span>`;
+    }
+    document.getElementById('modalPrice').innerHTML = priceHtml;
+    
+    // Stock
+    const stockEl = document.getElementById('modalStock');
+    if (product.stock > 10) {
+        stockEl.innerHTML = '<i class="fas fa-check-circle"></i> En stock';
+        stockEl.className = 'product-modal-stock in-stock';
+    } else if (product.stock > 0) {
+        stockEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ¡Solo quedan ${product.stock} unidades!`;
+        stockEl.className = 'product-modal-stock low-stock';
+    } else {
+        stockEl.innerHTML = '<i class="fas fa-times-circle"></i> Agotado';
+        stockEl.className = 'product-modal-stock out-of-stock';
+    }
+    
+    // Add to cart button
+    const addBtn = document.getElementById('modalAddToCart');
+    addBtn.disabled = product.stock <= 0;
+    addBtn.onclick = () => {
+        addToCart(product.id);
+        // Visual feedback
+        const originalHtml = addBtn.innerHTML;
+        addBtn.innerHTML = '<i class="fas fa-check"></i> ¡Agregado!';
+        setTimeout(() => addBtn.innerHTML = originalHtml, 1500);
+    };
+    
+    // Gallery
+    const gallery = product.gallery || [product.image, product.image, product.image];
+    const mainImg = document.getElementById('galleryMainImg');
+    mainImg.src = gallery[0];
+    mainImg.alt = product.name;
+    
+    const thumbsContainer = document.getElementById('galleryThumbs');
+    thumbsContainer.innerHTML = '';
+    gallery.forEach((img, index) => {
+        const thumb = document.createElement('div');
+        thumb.className = `gallery-thumb ${index === 0 ? 'active' : ''}`;
+        thumb.innerHTML = `<img src="${img}" alt="${product.name} - imagen ${index + 1}">`;
+        thumb.addEventListener('click', () => {
+            mainImg.src = img;
+            document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+        });
+        thumbsContainer.appendChild(thumb);
+    });
+    
+    // Reviews
+    const reviewsList = document.getElementById('reviewsList');
+    reviewsList.innerHTML = '';
+    if (product.reviews && product.reviews.length > 0) {
+        product.reviews.forEach(review => {
+            const reviewEl = document.createElement('div');
+            reviewEl.className = 'review-item';
+            reviewEl.innerHTML = `
+                <div class="review-header">
+                    <span class="review-user"><i class="fas fa-user-circle"></i> ${review.user}</span>
+                    <span class="review-date">${formatDate(review.date)}</span>
+                </div>
+                <div class="review-stars">${getStarsHtml(review.rating)}</div>
+                <p class="review-comment">${review.comment}</p>
+            `;
+            reviewsList.appendChild(reviewEl);
+        });
+    } else {
+        reviewsList.innerHTML = '<p style="color: var(--text-light); text-align: center;">Aún no hay opiniones para este producto.</p>';
+    }
+    
+    // Open modal
+    modal.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeProductModal() {
+    const modal = document.getElementById('productModal');
+    const overlay = document.getElementById('productModalOverlay');
+    
+    modal.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// Helper to format price
+function formatPrice(price) {
+    return new Intl.NumberFormat('es-CO', { 
+        style: 'currency', 
+        currency: 'COP', 
+        minimumFractionDigits: 0 
+    }).format(price);
+}
+
+// Helper to format date
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('es-CO', options);
+}
 
 // Global helper for onclick event
 window.addToCart = (id) => {
@@ -127,6 +302,25 @@ window.addToCart = (id) => {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     ProductManager.init();
+
+    // Product Modal Event Listeners
+    const closeModalBtn = document.getElementById('closeProductModal');
+    const modalOverlay = document.getElementById('productModalOverlay');
+    
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeProductModal);
+    }
+    
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', closeProductModal);
+    }
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeProductModal();
+        }
+    });
 
     // Render Dynamic Filters from LocalStorage Categories
     const categoriesContainer = document.getElementById('categoryFilters');

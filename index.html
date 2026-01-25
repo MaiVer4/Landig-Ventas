@@ -208,6 +208,44 @@
         </div>
     </aside>
 
+    <!-- Product Detail Modal -->
+    <div class="product-modal-overlay" id="productModalOverlay" aria-hidden="true"></div>
+    <div class="product-modal" id="productModal" role="dialog" aria-label="Detalle del producto" aria-modal="true">
+        <button class="product-modal-close" id="closeProductModal" aria-label="Cerrar detalle">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="product-modal-content">
+            <div class="product-modal-gallery">
+                <div class="gallery-main">
+                    <img id="galleryMainImg" src="" alt="Imagen principal del producto">
+                </div>
+                <div class="gallery-thumbs" id="galleryThumbs">
+                    <!-- Thumbnails injected here -->
+                </div>
+            </div>
+            <div class="product-modal-info">
+                <span class="product-modal-category" id="modalCategory"></span>
+                <h2 class="product-modal-title" id="modalTitle"></h2>
+                <div class="product-modal-rating" id="modalRating">
+                    <!-- Stars injected here -->
+                </div>
+                <p class="product-modal-description" id="modalDescription"></p>
+                <div class="product-modal-price" id="modalPrice"></div>
+                <div class="product-modal-stock" id="modalStock"></div>
+                <button class="btn btn-primary product-modal-add" id="modalAddToCart">
+                    <i class="fas fa-shopping-cart"></i> Agregar al Carrito
+                </button>
+                
+                <div class="product-modal-reviews">
+                    <h3><i class="fas fa-star"></i> Opiniones de Clientes</h3>
+                    <div class="reviews-list" id="reviewsList">
+                        <!-- Reviews injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/cart.js"></script>
     <script src="js/main.js"></script>
