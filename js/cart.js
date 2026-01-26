@@ -2,7 +2,6 @@ const Cart = {
     items: [],
 
     init() {
-        console.log('🛒 Cart.js cargado correctamente');
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
             this.items = JSON.parse(savedCart).map(i => ({ ...i, id: String(i.id) }));
@@ -215,8 +214,6 @@ const Cart = {
             phone: customerPhone
         };
 
-        console.log('🛒 Creando nuevo pedido:', newOrder);
-
         let existingOrders;
         try {
             const ordersData = localStorage.getItem('orders');
@@ -232,18 +229,14 @@ const Cart = {
 
         existingOrders.push(newOrder);
         localStorage.setItem('orders', JSON.stringify(existingOrders));
-        console.log('✅ Pedido guardado localmente. Total de pedidos:', existingOrders.length);
 
         // 2. Guardar en Supabase (si está disponible)
         if (window.supabaseHelpers && window.supabaseHelpers.addOrder) {
             try {
                 await window.supabaseHelpers.addOrder(newOrder);
-                console.log('✅ Pedido enviado a Supabase');
             } catch (err) {
                 console.error('❌ Error enviando pedido a Supabase', err);
             }
-        } else {
-            console.warn('ℹ️ Supabase no inicializado, solo se guardó en localStorage');
         }
 
         // 3. Abrir WhatsApp con manejo de bloqueo de popups
@@ -267,7 +260,6 @@ const Cart = {
 
 // Event Listeners for Cart UI
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('📦 Inicializando Cart...');
     Cart.init();
 
     const cartBtn = document.getElementById('cartBtn');
@@ -281,26 +273,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (cartBtn) {
         cartBtn.addEventListener('click', () => Cart.open());
-        console.log('✅ cartBtn listener attached');
     }
     
     if (closeCartBtn) {
         closeCartBtn.addEventListener('click', () => Cart.close());
-        console.log('✅ closeCartBtn listener attached');
     }
     
     if (cartOverlay) {
         cartOverlay.addEventListener('click', () => Cart.close());
-        console.log('✅ cartOverlay listener attached');
     }
     
-    // New: Confirm Order button opens the order modal
     if (confirmOrderBtn) {
-        confirmOrderBtn.addEventListener('click', () => {
-            console.log('📋 Confirm order button clicked!');
-            Cart.openOrderModal();
-        });
-        console.log('✅ confirmOrderBtn listener attached');
+        confirmOrderBtn.addEventListener('click', () => Cart.openOrderModal());
     }
 
     // Order Modal controls
@@ -317,11 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (sendWhatsAppBtn) {
-        sendWhatsAppBtn.addEventListener('click', () => {
-            console.log('🚀 Send WhatsApp button clicked!');
-            Cart.checkout();
-        });
-        console.log('✅ sendWhatsAppBtn listener attached');
+        sendWhatsAppBtn.addEventListener('click', () => Cart.checkout());
     }
 
     // Close with Escape key

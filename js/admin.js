@@ -17,16 +17,8 @@ const Admin = {
         const storedCategories = localStorage.getItem('categories');
         const storedOrders = localStorage.getItem('orders');
 
-        let shouldReload = false;
-
         if (storedProducts) {
             this.products = JSON.parse(storedProducts);
-            // Migration Check: ONLY if we see old vapes category (legacy data)
-            if (this.products.length > 0 && this.products[0].category === 'vapes') {
-                shouldReload = true;
-            }
-        } else {
-            shouldReload = true;
         }
 
         // Load Categories
@@ -51,20 +43,16 @@ const Admin = {
             try {
                 this.orders = JSON.parse(storedOrders);
                 if (!Array.isArray(this.orders)) this.orders = [];
-                console.log('📦 Orders loaded on init:', this.orders.length);
             } catch (e) {
                 console.error('❌ Error parsing orders on init', e);
-                this.orders = [];
+                this.orders = []
             }
-        } else {
-            console.log('ℹ️ No orders found, starting fresh');
         }
 
-        await this.loadProducts(shouldReload);
+        await this.loadProducts();
 
         this.setupStorageListeners();
         this.setupAuth();
-        // If already logged in, init dashboard immediately
         if (localStorage.getItem('adminLoggedIn') === 'true') {
             await this.initDashboard();
         }
@@ -74,11 +62,10 @@ const Admin = {
         if (window.supabaseHelpers && window.supabaseHelpers.fetchOrders) {
             try {
                 this.orders = await window.supabaseHelpers.fetchOrders();
-                console.log('📦 Pedidos cargados desde Supabase:', this.orders.length);
-                localStorage.setItem('orders', JSON.stringify(this.orders)); // fallback cache
+                localStorage.setItem('orders', JSON.stringify(this.orders));
                 return;
             } catch (e) {
-                console.error('❌ Error obteniendo pedidos desde Supabase, usando localStorage', e);
+                console.error('❌ Error obteniendo pedidos desde Supabase', e);
             }
         }
 
@@ -101,7 +88,6 @@ const Admin = {
         if (window.supabaseHelpers && window.supabaseHelpers.fetchProducts) {
             try {
                 this.products = await window.supabaseHelpers.fetchProducts();
-                console.log('📦 Productos cargados desde Supabase:', this.products.length);
                 localStorage.setItem('products', JSON.stringify(this.products));
                 return;
             } catch (e) {
@@ -799,36 +785,31 @@ const Admin = {
 
     setupGlobalHelpers() {
     // Global functions for HTML access
-        const self = this; // Store reference to Admin object
+        const self = this;
         
         window.clearAllOrders = function() {
-            console.log('🗑️ clearAllOrders called - showing modal');
             const modal = document.getElementById('confirmDeleteModal');
             if (modal) {
                 modal.classList.remove('hidden');
-                console.log('💬 Modal displayed');
-            } else {
-                console.error('❌ Modal not found');
+                document.body.classList.add('modal-open');
             }
         };
         
         window.executeDeleteAllOrders = function() {
-            console.log('✅ Executing delete all orders...');
             const modal = document.getElementById('confirmDeleteModal');
-            if (modal) modal.classList.add('hidden');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('modal-open');
+            }
             
             localStorage.removeItem('orders');
-            console.log('💾 Removed from localStorage');
             self.orders = [];
-            console.log('📦 Cleared admin orders array');
             if (window.supabaseHelpers && window.supabaseHelpers.deleteAllOrders) {
                 window.supabaseHelpers.deleteAllOrders().catch(err => console.error('❌ Error borrando pedidos en Supabase', err));
             }
             self.renderOrders();
-            console.log('🔄 Rendered empty orders table');
             if (self.salesChart) {
                 self.updateChart(self.currentTimeframe || 'daily');
-                console.log('📊 Updated chart');
             }
             alert('Todos los pedidos han sido eliminados correctamente');
         };
@@ -893,13 +874,19 @@ const Admin = {
             const prod = this.products.find(p => String(p.id) === String(id));
             this.pendingDeleteProductId = id;
             if (nameEl && prod) nameEl.textContent = prod.name;
-            if (modal) modal.classList.remove('hidden');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.classList.add('modal-open');
+            }
         };
 
         window.cancelDeleteProduct = () => {
             const modal = document.getElementById('productDeleteModal');
             this.pendingDeleteProductId = null;
-            if (modal) modal.classList.add('hidden');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('modal-open');
+            }
         };
 
         window.confirmDeleteProduct = () => {
@@ -911,6 +898,7 @@ const Admin = {
                 window.supabaseHelpers.deleteProduct(id).catch(err => console.error('❌ Error eliminando producto en Supabase', err));
             }
             this.renderAll();
+            document.body.classList.remove('modal-open');
             window.cancelDeleteProduct();
         };
 
@@ -1001,12 +989,6 @@ const Admin = {
     },
 
     renderIntelligence() {
-        console.log('🧠 Rendering intelligence section...');
-        
-        if (this.products.length === 0) {
-            console.warn('⚠️ No products available for intelligence analysis');
-        }
-        
         // 1. Prepare Data for Chart (Value per Category)
         const categories = {};
         this.products.forEach(p => {
@@ -1020,10 +1002,8 @@ const Admin = {
         // Render Chart
         const ctx = document.getElementById('categoryChart');
         if (ctx) {
-            console.log('📊 Creating category distribution chart...');
             // Destroy existing if any
             if (this.intChart) {
-                console.log('🔄 Destroying existing intelligence chart');
                 this.intChart.destroy();
             }
             
