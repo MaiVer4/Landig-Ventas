@@ -82,6 +82,27 @@
                 </li>
                 <li class="sidebar-link" data-tab="orders" onclick="switchTab(event, 'orders')">
                     <i class="fa-solid fa-receipt"></i>
+
+        <!-- Confirmation Modal for Delete Product -->
+        <div id="productDeleteModal" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 m-4 animate-scale-in">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-box-open text-3xl text-red-600"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">¿Eliminar producto?</h3>
+                    <p class="text-slate-600">Se eliminará <span id="productDeleteName" class="font-semibold text-slate-800"></span> del inventario.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="cancelDeleteProduct()" class="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmDeleteProduct()" class="flex-1 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors">
+                        Sí, eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
                     <span>Pedidos</span>
                 </li>
                 <li class="sidebar-link" data-tab="products" onclick="switchTab(event, 'products')">

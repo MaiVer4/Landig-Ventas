@@ -4,6 +4,7 @@ const Admin = {
     orders: [], // Store order history
     salesChart: null,
     currentTimeframe: 'daily',
+    pendingDeleteProductId: null,
     syncProductRemote(product) {
         if (window.supabaseHelpers && window.supabaseHelpers.upsertProduct) {
             window.supabaseHelpers.upsertProduct(product).catch(err => console.error('❌ Error sincronizando producto', product.id, err));
@@ -887,14 +888,30 @@ const Admin = {
         };
 
         window.deleteProduct = (id) => {
-            if (confirm('¿Estás seguro de eliminar este producto?')) {
-                this.products = this.products.filter(p => String(p.id) !== String(id));
-                this.saveData();
-                if (window.supabaseHelpers && window.supabaseHelpers.deleteProduct) {
-                    window.supabaseHelpers.deleteProduct(id).catch(err => console.error('❌ Error eliminando producto en Supabase', err));
-                }
-                this.renderAll();
+            const modal = document.getElementById('productDeleteModal');
+            const nameEl = document.getElementById('productDeleteName');
+            const prod = this.products.find(p => String(p.id) === String(id));
+            this.pendingDeleteProductId = id;
+            if (nameEl && prod) nameEl.textContent = prod.name;
+            if (modal) modal.classList.remove('hidden');
+        };
+
+        window.cancelDeleteProduct = () => {
+            const modal = document.getElementById('productDeleteModal');
+            this.pendingDeleteProductId = null;
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.confirmDeleteProduct = () => {
+            const id = this.pendingDeleteProductId;
+            if (!id) { window.cancelDeleteProduct(); return; }
+            this.products = this.products.filter(p => String(p.id) !== String(id));
+            this.saveData();
+            if (window.supabaseHelpers && window.supabaseHelpers.deleteProduct) {
+                window.supabaseHelpers.deleteProduct(id).catch(err => console.error('❌ Error eliminando producto en Supabase', err));
             }
+            this.renderAll();
+            window.cancelDeleteProduct();
         };
 
         window.exportToCSV = () => {
