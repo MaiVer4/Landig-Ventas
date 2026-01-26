@@ -166,13 +166,13 @@ const Admin = {
                 alert('Credenciales incorrectas');
             }
         });
+    },
 
-        window.logout = () => {
-			if(confirm('¿Cerrar sesión?')) {
-				localStorage.removeItem('adminLoggedIn');
-				location.reload();
-			}
-        };
+    logout() {
+        if (confirm('¿Cerrar sesión?')) {
+            localStorage.removeItem('adminLoggedIn');
+            location.reload();
+        }
     },
 
     async initDashboard() {
@@ -1096,4 +1096,5 @@ document.addEventListener('DOMContentLoaded', () => {
     Admin.init();
     // Expose Admin for inline HTML calls (like quickAddStock)
     window.Admin = Admin;
+    window.logout = () => Admin.logout();
 });
