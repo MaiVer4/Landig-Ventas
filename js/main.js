@@ -3,33 +3,19 @@ const ProductManager = {
     products: [],
 
     async init() {
-        const storedProducts = localStorage.getItem('products');
-        let shouldReload = false;
-        
-        if (storedProducts) {
-            this.products = JSON.parse(storedProducts);
-             // Migration check ONLY for legacy 'vapes' category (old version)
-             if (this.products.length > 0 && this.products[0].category === 'vapes') {
-                shouldReload = true;
-            }
-        } else {
-            shouldReload = true;
-        }
-
-        if (shouldReload) {
-            try {
-                const response = await fetch('data/products.json');
-                const data = await response.json();
-                this.products = data;
-                // Save initial data to LS so Admin changes persist
-                localStorage.setItem('products', JSON.stringify(data));
-            } catch (error) {
-                console.error('Error loading products:', error);
-                document.getElementById('productsGrid').innerHTML = '<p>Error al cargar productos.</p>';
-            }
+        // ALWAYS load from products.json - this is the source of truth for production
+        // localStorage is only used for admin preview, not for public visitors
+        try {
+            const response = await fetch('data/products.json');
+            const data = await response.json();
+            this.products = data;
+        } catch (error) {
+            console.error('Error loading products:', error);
+            document.getElementById('productsGrid').innerHTML = '<p>Error al cargar productos.</p>';
+            return;
         }
         
-        // Ensure all products have gallery and reviews (add defaults if missing, without reloading)
+        // Ensure all products have gallery and reviews (add defaults if missing)
         this.products = this.products.map(p => ({
             ...p,
             gallery: p.gallery || [p.image, p.image, p.image],

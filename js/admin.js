@@ -1060,8 +1060,28 @@ const Admin = {
              const score = Math.min(Math.round(this.products.length * 1.5 + 50), 98);
              healthScoreEl.innerText = score + '%';
         }
+    },
+
+    // Export products.json for GitHub deployment
+    exportProductsJSON() {
+        const dataStr = JSON.stringify(this.products, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'products.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('✅ Archivo products.json descargado.\n\nPara actualizar en GitHub Pages:\n1. Reemplaza el archivo data/products.json con este\n2. Haz commit y push a tu repositorio\n3. Espera unos minutos a que GitHub Pages se actualice');
     }
 };
+
+// Global export function
+window.exportProducts = () => Admin.exportProductsJSON();
 
 // Start
 document.addEventListener('DOMContentLoaded', () => {
