@@ -33,8 +33,6 @@ E-commerce moderno y completamente funcional con sistema de gestión de inventar
 **Tienda:** [https://maiver4.github.io/Landig-Ventas/](https://maiver4.github.io/Landig-Ventas/)
 
 **Admin:** [https://maiver4.github.io/Landig-Ventas/admin.html](https://maiver4.github.io/Landig-Ventas/admin.html)
-- Usuario: `admin`
-- Contraseña: `admin123`
 
 ## 📸 Screenshots
 

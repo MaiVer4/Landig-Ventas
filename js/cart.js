@@ -5,14 +5,14 @@ const Cart = {
         console.log('🛒 Cart.js cargado correctamente');
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
-            this.items = JSON.parse(savedCart);
+            this.items = JSON.parse(savedCart).map(i => ({ ...i, id: String(i.id) }));
         }
         this.render();
         this.updateBadge();
     },
 
     add(product) {
-        const existingItem = this.items.find(item => item.id === product.id);
+        const existingItem = this.items.find(item => String(item.id) === String(product.id));
         if (existingItem) {
             existingItem.quantity++;
         } else {
@@ -25,14 +25,14 @@ const Cart = {
     },
 
     remove(id) {
-        this.items = this.items.filter(item => item.id !== id);
+        this.items = this.items.filter(item => String(item.id) !== String(id));
         this.save();
         this.render();
         this.updateBadge();
     },
 
     updateQuantity(id, change) {
-        const item = this.items.find(item => item.id === id);
+        const item = this.items.find(item => String(item.id) === String(id));
         if (item) {
             item.quantity += change;
             if (item.quantity <= 0) {
@@ -78,10 +78,10 @@ const Cart = {
                         <div class="cart-item-title">${item.name}</div>
                         <div class="cart-item-price">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(item.price)} x ${item.quantity}</div>
                         <div class="cart-item-controls">
-                            <button class="qty-btn" onclick="Cart.updateQuantity(${item.id}, -1)">-</button>
+                            <button class="qty-btn" onclick="Cart.updateQuantity('${item.id}', -1)">-</button>
                             <span>${item.quantity}</span>
-                            <button class="qty-btn" onclick="Cart.updateQuantity(${item.id}, 1)">+</button>
-                            <button class="action-btn btn-delete" style="margin-left: auto; padding: 2px 6px;" onclick="Cart.remove(${item.id})"><i class="fas fa-trash"></i></button>
+                            <button class="qty-btn" onclick="Cart.updateQuantity('${item.id}', 1)">+</button>
+                            <button class="action-btn btn-delete" style="margin-left: auto; padding: 2px 6px;" onclick="Cart.remove('${item.id}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                 </div>
@@ -151,7 +151,7 @@ const Cart = {
         this.open();
     },
 
-    checkout() {
+    async checkout() {
         // Validate form
         const nameInput = document.getElementById('customerName');
         const phoneInput = document.getElementById('customerPhone');
@@ -167,7 +167,9 @@ const Cart = {
             nameInput.classList.remove('error');
         }
 
-        if (!customerPhone) {
+        // Validación básica para números colombianos (10 dígitos, con o sin espacios)
+        const phoneDigits = customerPhone.replace(/\D/g, '');
+        if (!customerPhone || phoneDigits.length < 10) {
             phoneInput.classList.add('error');
             hasError = true;
         } else {
@@ -230,14 +232,31 @@ const Cart = {
 
         existingOrders.push(newOrder);
         localStorage.setItem('orders', JSON.stringify(existingOrders));
-        console.log('✅ Pedido guardado. Total de pedidos:', existingOrders.length);
+        console.log('✅ Pedido guardado localmente. Total de pedidos:', existingOrders.length);
 
-        // 2. Open WhatsApp
+        // 2. Guardar en Supabase (si está disponible)
+        if (window.supabaseHelpers && window.supabaseHelpers.addOrder) {
+            try {
+                await window.supabaseHelpers.addOrder(newOrder);
+                console.log('✅ Pedido enviado a Supabase');
+            } catch (err) {
+                console.error('❌ Error enviando pedido a Supabase', err);
+            }
+        } else {
+            console.warn('ℹ️ Supabase no inicializado, solo se guardó en localStorage');
+        }
+
+        // 3. Abrir WhatsApp con manejo de bloqueo de popups
         const phoneNumber = "573219395309"; 
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
+        const win = window.open(url, '_blank');
+
+        if (!win || win.closed || typeof win.closed === 'undefined') {
+            alert('No se pudo abrir WhatsApp. Activa las ventanas emergentes o copia y abre este enlace:\n\n' + url);
+            return; // No limpiar el carrito si no se abrió
+        }
         
-        // 3. Clear cart and close modal
+        // 4. Clear cart and close modal solo si se abrió WhatsApp
         this.items = [];
         this.save();
         this.render();

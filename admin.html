@@ -223,9 +223,6 @@
                 <div class="admin-header">
                     <h2>Gestión de Inventario</h2>
                     <div class="flex gap-3">
-                        <button onclick="exportProducts()" class="btn-secondary flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors shadow-sm" title="Descargar JSON para GitHub Pages">
-                            <i class="fa-solid fa-cloud-arrow-down"></i> Exportar para Deploy
-                        </button>
                         <button onclick="exportToCSV()" class="btn-secondary flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">
                             <i class="fa-solid fa-file-csv"></i> Exportar CSV
                         </button>
@@ -471,6 +468,16 @@
             </div>
         </div>
     </div>
+
+    <!-- Supabase Config (rellena con tus credenciales públicas) -->
+    <script>
+        window.supabaseConfig = {
+            url: "https://wwdpaifpazcryngdmaea.supabase.co",
+            anonKey: "sb_publishable_Y9h3IAXvoxnEGSkDhcuZ3g_NCUOakm3"
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

@@ -3,27 +3,30 @@ const ProductManager = {
     products: [],
 
     async init() {
-        // ALWAYS load from products.json - this is the source of truth for production
-        // localStorage is only used for admin preview, not for public visitors
-        try {
-            const response = await fetch('data/products.json');
-            const data = await response.json();
-            this.products = data;
-        } catch (error) {
-            console.error('Error loading products:', error);
+        if (!(window.supabaseHelpers && window.supabaseHelpers.fetchProducts)) {
+            console.error('Supabase no está disponible en el frontend');
             document.getElementById('productsGrid').innerHTML = '<p>Error al cargar productos.</p>';
             return;
         }
-        
-        // Ensure all products have gallery and reviews (add defaults if missing)
-        this.products = this.products.map(p => ({
-            ...p,
-            gallery: p.gallery || [p.image, p.image, p.image],
-            reviews: p.reviews || [],
-            rating: p.rating || 0,
-            fullDescription: p.fullDescription || p.description
-        }));
-        
+
+        try {
+            const data = await window.supabaseHelpers.fetchProducts();
+            const inStock = Array.isArray(data) ? data.filter(p => (p.stock || 0) > 0) : [];
+
+            // Normalize fields to keep UI stable even si faltan columnas opcionales
+            this.products = inStock.map(p => ({
+                ...p,
+                gallery: p.gallery || [p.image, p.image, p.image].filter(Boolean),
+                reviews: p.reviews || [],
+                rating: p.rating || 0,
+                fullDescription: p.fullDescription || p.description || ''
+            }));
+        } catch (error) {
+            console.error('Error loading products desde Supabase:', error);
+            document.getElementById('productsGrid').innerHTML = '<p>Error al cargar productos.</p>';
+            return;
+        }
+
         this.renderProducts('all');
     },
 
@@ -94,7 +97,7 @@ const ProductManager = {
                     <div class="product-footer">
                         ${priceHtml}
                         ${product.stock > 0 
-                            ? `<button class="btn-add" onclick="event.stopPropagation(); addToCart(${product.id})" title="Añadir al carrito"><i class="fas fa-plus"></i></button>`
+                            ? `<button class="btn-add" onclick="event.stopPropagation(); addToCart('${product.id}')" title="Añadir al carrito"><i class="fas fa-plus"></i></button>`
                             : `<button class="btn-secondary" style="font-size:0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px;" disabled>Agotado</button>`
                         }
                     </div>
@@ -130,7 +133,7 @@ function getStarsHtml(rating) {
 
 // Product Modal Functions
 function openProductModal(productId) {
-    const product = ProductManager.products.find(p => p.id === productId);
+    const product = ProductManager.products.find(p => String(p.id) === String(productId));
     if (!product) return;
     
     const modal = document.getElementById('productModal');
@@ -261,9 +264,22 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString('es-CO', options);
 }
 
+// Global filter helper used by nav
+window.filterBy = (slug) => {
+    const buttons = document.querySelectorAll('.filter-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    const target = document.querySelector(`.filter-btn[data-category="${slug}"]`);
+    if (target) {
+        target.classList.add('active');
+    }
+    ProductManager.renderProducts(slug || 'all');
+    const catalog = document.getElementById('catalogo');
+    if (catalog) catalog.scrollIntoView({ behavior: 'smooth' });
+};
+
 // Global helper for onclick event
 window.addToCart = (id) => {
-    const product = ProductManager.products.find(p => p.id === id);
+    const product = ProductManager.products.find(p => String(p.id) === String(id));
     if (product && product.stock > 0) {
         // Calculate effective price if offer
         let effectivePrice = product.price;
@@ -271,17 +287,20 @@ window.addToCart = (id) => {
             effectivePrice = product.price * (1 - product.discountPercent / 100);
         }
 
-        // Pass a copy with the effective price
+        // Pass a copy with the effective price and normalize id as string
         Cart.add({
             ...product,
+            id: String(product.id),
             price: effectivePrice
         });
         
         // Show tiny feedback
         const btn = event.currentTarget;
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i>';
-        setTimeout(() => btn.innerHTML = originalHtml, 1000);
+        if (btn) {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => btn.innerHTML = originalHtml, 1000);
+        }
     }
 };
 

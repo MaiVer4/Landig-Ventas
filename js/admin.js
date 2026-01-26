@@ -4,6 +4,11 @@ const Admin = {
     orders: [], // Store order history
     salesChart: null,
     currentTimeframe: 'daily',
+    syncProductRemote(product) {
+        if (window.supabaseHelpers && window.supabaseHelpers.upsertProduct) {
+            window.supabaseHelpers.upsertProduct(product).catch(err => console.error('❌ Error sincronizando producto', product.id, err));
+        }
+    },
 
     async init() {
         // 1. Data Loading & Migration
@@ -52,27 +57,82 @@ const Admin = {
             }
         } else {
             console.log('ℹ️ No orders found, starting fresh');
-            this.orders = [];
         }
 
-        if (shouldReload) {
-            try {
-                const response = await fetch('data/products.json');
-                this.products = await response.json();
-                this.saveData();
-                console.log('Database migrated/initialized');
-            } catch (e) {
-                console.error("Error init products", e);
-                // Fallback empty if file fails
-                this.products = [];
-            }
-        }
+        await this.loadProducts(shouldReload);
 
         this.setupStorageListeners();
         this.setupAuth();
         // If already logged in, init dashboard immediately
         if (localStorage.getItem('adminLoggedIn') === 'true') {
-            this.initDashboard();
+            await this.initDashboard();
+        }
+    },
+
+    async loadOrders() {
+        if (window.supabaseHelpers && window.supabaseHelpers.fetchOrders) {
+            try {
+                this.orders = await window.supabaseHelpers.fetchOrders();
+                console.log('📦 Pedidos cargados desde Supabase:', this.orders.length);
+                localStorage.setItem('orders', JSON.stringify(this.orders)); // fallback cache
+                return;
+            } catch (e) {
+                console.error('❌ Error obteniendo pedidos desde Supabase, usando localStorage', e);
+            }
+        }
+
+        const storedOrders = localStorage.getItem('orders');
+        if (storedOrders) {
+            try {
+                this.orders = JSON.parse(storedOrders);
+                if (!Array.isArray(this.orders)) this.orders = [];
+            } catch (e) {
+                console.error('❌ Error leyendo pedidos locales', e);
+                this.orders = [];
+            }
+        } else {
+            this.orders = [];
+        }
+    },
+
+    async loadProducts() {
+        // Try Supabase first
+        if (window.supabaseHelpers && window.supabaseHelpers.fetchProducts) {
+            try {
+                this.products = await window.supabaseHelpers.fetchProducts();
+                console.log('📦 Productos cargados desde Supabase:', this.products.length);
+                localStorage.setItem('products', JSON.stringify(this.products));
+                return;
+            } catch (e) {
+                console.error('❌ Error obteniendo productos desde Supabase, usando respaldo local', e);
+            }
+        }
+
+        // LocalStorage fallback
+        const storedProducts = localStorage.getItem('products');
+        if (storedProducts) {
+            try {
+                this.products = JSON.parse(storedProducts);
+                if (!Array.isArray(this.products)) this.products = [];
+                return;
+            } catch (e) {
+                console.error('❌ Error leyendo productos locales', e);
+                this.products = [];
+            }
+        }
+
+        // If everything fails, leave empty to avoid showing stale data
+        this.products = [];
+    },
+
+    async syncOrderRemote(order) {
+        if (window.supabaseHelpers && window.supabaseHelpers.upsertOrder) {
+            try {
+                await window.supabaseHelpers.upsertOrder(order);
+                console.log('✅ Pedido sincronizado con Supabase');
+            } catch (e) {
+                console.error('❌ No se pudo sincronizar el pedido en Supabase', e);
+            }
         }
     },
 
@@ -81,22 +141,27 @@ const Admin = {
         const adminPanel = document.getElementById('adminPanel');
         const loginForm = document.getElementById('loginForm');
 
+        if (!loginOverlay || !adminPanel || !loginForm) {
+            console.error('❌ Elementos de login no encontrados');
+            return;
+        }
+
         if (localStorage.getItem('adminLoggedIn') === 'true') {
             loginOverlay.classList.add('hidden');
             adminPanel.classList.remove('hidden');
             // Don't call initDashboard here, it's called from init()
         }
 
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
+            const user = (document.getElementById('username').value || '').trim().toLowerCase();
+            const pass = (document.getElementById('password').value || '').trim();
 
             if (user === 'admin' && pass === 'admin123') {
                 localStorage.setItem('adminLoggedIn', 'true');
                 loginOverlay.classList.add('hidden');
                 adminPanel.classList.remove('hidden');
-                this.initDashboard();
+                await this.initDashboard();
             } else {
                 alert('Credenciales incorrectas');
             }
@@ -110,22 +175,9 @@ const Admin = {
         };
     },
 
-    initDashboard() {
+    async initDashboard() {
         console.log('🚀 Inicializando dashboard...');
-        
-        // Force reload orders from localStorage
-        const storedOrders = localStorage.getItem('orders');
-        if (storedOrders) {
-            try {
-                this.orders = JSON.parse(storedOrders);
-                console.log('📦 Pedidos cargados en init:', this.orders.length);
-            } catch (e) {
-                console.error('❌ Error cargando pedidos en init', e);
-                this.orders = [];
-            }
-        } else {
-            this.orders = [];
-        }
+        await this.loadOrders();
         
         this.renderDashboardStats();
         this.renderProductsTable();
@@ -184,7 +236,7 @@ const Admin = {
                         <span class="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-full">${p.stock} un.</span>
                     </td>
                     <td class="py-3 px-3">
-                         <button onclick="Admin.quickAddStock(${p.id})" class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors">
+                         <button onclick="Admin.quickAddStock('${p.id}')" class="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded border border-indigo-200 transition-colors">
                             +10
                         </button>
                     </td>
@@ -237,10 +289,10 @@ const Admin = {
                 </td>
                 <td>
                     <div class="flex">
-                        <button onclick="openProductModal(${p.id})" class="action-btn btn-edit" title="Editar">
+                        <button onclick="openProductModal('${p.id}')" class="action-btn btn-edit" title="Editar">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <button onclick="deleteProduct(${p.id})" class="action-btn btn-delete" title="Eliminar">
+                        <button onclick="deleteProduct('${p.id}')" class="action-btn btn-delete" title="Eliminar">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
@@ -458,45 +510,9 @@ const Admin = {
             return;
         }
 
-        // Force reload from localStorage ALWAYS
-        const storedOrders = localStorage.getItem('orders');
-        console.log('📦 Datos de localStorage (orders):', storedOrders);
-        
-        if (storedOrders) {
-             try {
-                this.orders = JSON.parse(storedOrders);
-                console.log('✅ Pedidos parseados:', this.orders);
-                if (!Array.isArray(this.orders)) {
-                    console.warn('⚠️ orders no es un array, reseteando');
-                    this.orders = [];
-                } else {
-                    // Validate and fix order data format
-                    let needsMigration = false;
-                    this.orders = this.orders.filter(o => {
-                        // Check if items is not an array (old format)
-                        if (!Array.isArray(o.items)) {
-                            console.warn('⚠️ Pedido con formato inválido detectado:', o.id, '- items no es un array');
-                            needsMigration = true;
-                            return false; // Remove invalid orders
-                        }
-                        return true; // Keep valid orders
-                    });
-                    
-                    if (needsMigration) {
-                        console.log('🔄 Migrando datos de pedidos, eliminados pedidos con formato inválido');
-                        console.log('📊 Pedidos válidos restantes:', this.orders.length);
-                        localStorage.setItem('orders', JSON.stringify(this.orders));
-                    }
-                }
-             } catch(e) {
-                 console.error('❌ Error parsing orders', e);
-                 this.orders = [];
-             }
-        } else {
-             console.log('ℹ️ No hay pedidos en localStorage');
-             this.orders = [];
-        }
-
+        // Validate data format
+        this.orders = Array.isArray(this.orders) ? this.orders : [];
+        this.orders = this.orders.filter(o => Array.isArray(o.items));
         console.log('📊 Total de pedidos a renderizar:', this.orders.length);
 
         // Sort by last activity (paidAt/cancelledAt/date)
@@ -523,10 +539,10 @@ const Admin = {
             if (o.status === 'pending_whatsapp') {
                 statusBadge = '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold border border-yellow-200 inline-flex items-center gap-1"><i class="fa-brands fa-whatsapp"></i>Pendiente WhatsApp</span>';
                 actions = `
-                    <button onclick="Admin.updateOrderStatus(${o.id}, 'paid')" class="bg-emerald-100 text-emerald-600 hover:bg-emerald-200 p-2 rounded mr-1 transition-colors" title="Marcar como Pagado">
+                    <button onclick="Admin.updateOrderStatus('${o.id}', 'paid')" class="bg-emerald-100 text-emerald-600 hover:bg-emerald-200 p-2 rounded mr-1 transition-colors" title="Marcar como Pagado">
                         <i class="fa-solid fa-check"></i>
                     </button>
-                    <button onclick="Admin.updateOrderStatus(${o.id}, 'cancelled')" class="bg-red-100 text-red-600 hover:bg-red-200 p-2 rounded transition-colors" title="Cancelar Pedido">
+                    <button onclick="Admin.updateOrderStatus('${o.id}', 'cancelled')" class="bg-red-100 text-red-600 hover:bg-red-200 p-2 rounded transition-colors" title="Cancelar Pedido">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 `;
@@ -565,7 +581,7 @@ const Admin = {
         }).join('');
     },
 
-    updateOrderStatus(orderId, newStatus) {
+    async updateOrderStatus(orderId, newStatus) {
         console.log('🔄 Actualizando pedido #' + orderId + ' a estado:', newStatus);
         
         // Force reload orders from localStorage first
@@ -581,7 +597,7 @@ const Admin = {
             }
         }
 
-        const orderIndex = this.orders.findIndex(o => o.id === orderId);
+        const orderIndex = this.orders.findIndex(o => String(o.id) === String(orderId));
         if (orderIndex === -1) {
             console.error('❌ Pedido no encontrado:', orderId);
             alert('Error: Pedido no encontrado');
@@ -606,7 +622,7 @@ const Admin = {
             
             // Check stock first
             order.items.forEach(item => {
-                const product = this.products.find(p => p.id === item.id);
+                const product = this.products.find(p => String(p.id) === String(item.id));
                 if (!product) {
                     stockError = true;
                     errorMessage = `Producto "${item.name}" no encontrado en inventario`;
@@ -625,7 +641,7 @@ const Admin = {
 
             // Apply deduction
             order.items.forEach(item => {
-                const product = this.products.find(p => p.id === item.id);
+                const product = this.products.find(p => String(p.id) === String(item.id));
                 if (product) {
                     const oldStock = product.stock;
                     product.stock -= item.quantity;
@@ -650,7 +666,8 @@ const Admin = {
         this.orders[orderIndex] = order;
         console.log('💾 Guardando cambios del pedido...');
         this.saveOrders(); // Save Order changes
-        console.log('✅ Pedido actualizado exitosamente en localStorage');
+        await this.syncOrderRemote(order);
+        console.log('✅ Pedido actualizado');
         
         // Refresh UI
         this.renderOrders(); // Refresh table
@@ -803,6 +820,9 @@ const Admin = {
             console.log('💾 Removed from localStorage');
             self.orders = [];
             console.log('📦 Cleared admin orders array');
+            if (window.supabaseHelpers && window.supabaseHelpers.deleteAllOrders) {
+                window.supabaseHelpers.deleteAllOrders().catch(err => console.error('❌ Error borrando pedidos en Supabase', err));
+            }
             self.renderOrders();
             console.log('🔄 Rendered empty orders table');
             if (self.salesChart) {
@@ -837,7 +857,7 @@ const Admin = {
             document.getElementById('discountContainer').classList.add('hidden');
 
             if (id) {
-                const p = this.products.find(x => x.id === id);
+                const p = this.products.find(x => String(x.id) === String(id));
                 if (p) {
                     title.innerText = 'Editar Producto';
                     document.getElementById('productId').value = p.id;
@@ -868,8 +888,11 @@ const Admin = {
 
         window.deleteProduct = (id) => {
             if (confirm('¿Estás seguro de eliminar este producto?')) {
-                this.products = this.products.filter(p => p.id !== id);
+                this.products = this.products.filter(p => String(p.id) !== String(id));
                 this.saveData();
+                if (window.supabaseHelpers && window.supabaseHelpers.deleteProduct) {
+                    window.supabaseHelpers.deleteProduct(id).catch(err => console.error('❌ Error eliminando producto en Supabase', err));
+                }
                 this.renderAll();
             }
         };
@@ -909,7 +932,7 @@ const Admin = {
     },
 
     quickAddStock(id) {
-        const p = this.products.find(x => x.id === id);
+        const p = this.products.find(x => String(x.id) === String(id));
         if (p) {
             p.stock += 10;
             this.saveData();
@@ -918,11 +941,11 @@ const Admin = {
     },
 
     saveProduct() {
-        const id = document.getElementById('productId').value;
+        const id = String(document.getElementById('productId').value || '');
         const isOffer = document.getElementById('pIsOffer').checked;
 
         const newProd = {
-            id: id ? parseInt(id) : Date.now(),
+            id: id ? id : String(Date.now()),
             name: document.getElementById('pName').value,
             description: document.getElementById('pDesc').value,
             price: parseFloat(document.getElementById('pPrice').value),
@@ -934,7 +957,7 @@ const Admin = {
         };
 
         if (id) {
-            const index = this.products.findIndex(p => p.id == id);
+            const index = this.products.findIndex(p => String(p.id) === String(id));
             if (index !== -1) this.products[index] = newProd;
         } else {
             this.products.push(newProd);
@@ -947,6 +970,11 @@ const Admin = {
 
     saveData() {
         localStorage.setItem('products', JSON.stringify(this.products));
+        if (window.supabaseHelpers && window.supabaseHelpers.upsertProduct) {
+            this.products.forEach(p => {
+                window.supabaseHelpers.upsertProduct(p).catch(err => console.error('❌ Error sincronizando producto', p.id, err));
+            });
+        }
     },
 
     renderAll() {
@@ -1060,28 +1088,8 @@ const Admin = {
              const score = Math.min(Math.round(this.products.length * 1.5 + 50), 98);
              healthScoreEl.innerText = score + '%';
         }
-    },
-
-    // Export products.json for GitHub deployment
-    exportProductsJSON() {
-        const dataStr = JSON.stringify(this.products, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'products.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        alert('✅ Archivo products.json descargado.\n\nPara actualizar en GitHub Pages:\n1. Reemplaza el archivo data/products.json con este\n2. Haz commit y push a tu repositorio\n3. Espera unos minutos a que GitHub Pages se actualice');
     }
 };
-
-// Global export function
-window.exportProducts = () => Admin.exportProductsJSON();
 
 // Start
 document.addEventListener('DOMContentLoaded', () => {
