@@ -101,15 +101,97 @@ const Cart = {
         document.getElementById('cartOverlay').classList.remove('open');
     },
 
-    checkout() {
+    // Open confirmation modal
+    openOrderModal() {
         if (this.items.length === 0) {
             alert('El carrito está vacío');
             return;
         }
 
-        let message = "Hola, me gustaría realizar el siguiente pedido:\n\n";
+        // Populate order summary
+        const orderItemsList = document.getElementById('orderItemsList');
+        const orderTotalAmount = document.getElementById('orderTotalAmount');
+        
         let total = 0;
+        orderItemsList.innerHTML = this.items.map(item => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+            return `
+                <div class="order-item-row">
+                    <span class="order-item-name">${item.name}</span>
+                    <span class="order-item-qty">x${item.quantity}</span>
+                    <span class="order-item-price">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(subtotal)}</span>
+                </div>
+            `;
+        }).join('');
 
+        orderTotalAmount.innerText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(total);
+
+        // Clear form
+        document.getElementById('customerName').value = '';
+        document.getElementById('customerPhone').value = '';
+        document.getElementById('customerName').classList.remove('error');
+        document.getElementById('customerPhone').classList.remove('error');
+
+        // Close cart and open order modal
+        this.close();
+        document.getElementById('orderModal').classList.add('open');
+        document.getElementById('orderModalOverlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    },
+
+    closeOrderModal() {
+        document.getElementById('orderModal').classList.remove('open');
+        document.getElementById('orderModalOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+    },
+
+    backToCart() {
+        this.closeOrderModal();
+        this.open();
+    },
+
+    checkout() {
+        // Validate form
+        const nameInput = document.getElementById('customerName');
+        const phoneInput = document.getElementById('customerPhone');
+        const customerName = nameInput.value.trim();
+        const customerPhone = phoneInput.value.trim();
+
+        let hasError = false;
+
+        if (!customerName) {
+            nameInput.classList.add('error');
+            hasError = true;
+        } else {
+            nameInput.classList.remove('error');
+        }
+
+        if (!customerPhone) {
+            phoneInput.classList.add('error');
+            hasError = true;
+        } else {
+            phoneInput.classList.remove('error');
+        }
+
+        if (hasError) {
+            alert('Por favor completa todos los campos requeridos');
+            return;
+        }
+
+        if (this.items.length === 0) {
+            alert('El carrito está vacío');
+            return;
+        }
+
+        // Build WhatsApp message
+        let message = `*NUEVO PEDIDO*\n\n`;
+        message += `*Datos del Cliente:*\n`;
+        message += `Hola, soy *${customerName}*\n`;
+        message += `Mi número telefónico: *${customerPhone}*\n\n`;
+        message += `*Productos:*\n`;
+
+        let total = 0;
         this.items.forEach(item => {
             const subtotal = item.price * item.quantity;
             total += subtotal;
@@ -117,6 +199,7 @@ const Cart = {
         });
 
         message += `\n*Total a pagar: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(total)}*`;
+ 
 
         // 1. Save Order to LocalStorage for Admin
         const newOrder = {
@@ -124,9 +207,10 @@ const Cart = {
             date: new Date().toISOString(),
             status: 'pending_whatsapp',
             channel: 'whatsapp',
-            items: JSON.parse(JSON.stringify(this.items)), // Deep copy
+            items: JSON.parse(JSON.stringify(this.items)),
             total: total,
-            customer: 'Cliente Web'
+            customer: customerName,
+            phone: customerPhone
         };
 
         console.log('🛒 Creando nuevo pedido:', newOrder);
@@ -134,34 +218,30 @@ const Cart = {
         let existingOrders;
         try {
             const ordersData = localStorage.getItem('orders');
-            console.log('📦 Pedidos existentes (raw):', ordersData);
             existingOrders = ordersData ? JSON.parse(ordersData) : [];
         } catch (err) {
-            console.error('❌ Error leyendo pedidos previos, se reinicia la lista', err);
+            console.error('❌ Error leyendo pedidos previos', err);
             existingOrders = [];
         }
 
         if (!Array.isArray(existingOrders)) {
-            console.warn('⚠️ Formato de pedidos inválido detectado, se crea lista nueva');
             existingOrders = [];
         }
 
         existingOrders.push(newOrder);
-        const ordersJSON = JSON.stringify(existingOrders);
-        localStorage.setItem('orders', ordersJSON);
+        localStorage.setItem('orders', JSON.stringify(existingOrders));
         console.log('✅ Pedido guardado. Total de pedidos:', existingOrders.length);
-        console.log('📋 Contenido final en localStorage:', ordersJSON);
 
         // 2. Open WhatsApp
         const phoneNumber = "573219395309"; 
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
         
-        // 3. Clear cart
+        // 3. Clear cart and close modal
         this.items = [];
         this.save();
         this.render();
-        this.close();
+        this.closeOrderModal();
         this.updateBadge();
     }
 };
@@ -174,36 +254,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartBtn = document.getElementById('cartBtn');
     const closeCartBtn = document.getElementById('closeCartBtn');
     const cartOverlay = document.getElementById('cartOverlay');
-    const checkoutBtn = document.getElementById('checkoutBtn');
+    const confirmOrderBtn = document.getElementById('confirmOrderBtn');
+    const closeOrderModal = document.getElementById('closeOrderModal');
+    const orderModalOverlay = document.getElementById('orderModalOverlay');
+    const backToCartBtn = document.getElementById('backToCartBtn');
+    const sendWhatsAppBtn = document.getElementById('sendWhatsAppBtn');
 
     if (cartBtn) {
         cartBtn.addEventListener('click', () => Cart.open());
         console.log('✅ cartBtn listener attached');
-    } else {
-        console.error('❌ cartBtn not found');
     }
     
     if (closeCartBtn) {
         closeCartBtn.addEventListener('click', () => Cart.close());
         console.log('✅ closeCartBtn listener attached');
-    } else {
-        console.error('❌ closeCartBtn not found');
     }
     
     if (cartOverlay) {
         cartOverlay.addEventListener('click', () => Cart.close());
         console.log('✅ cartOverlay listener attached');
-    } else {
-        console.error('❌ cartOverlay not found');
     }
     
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', () => {
-            console.log('🚀 Checkout button clicked!');
+    // New: Confirm Order button opens the order modal
+    if (confirmOrderBtn) {
+        confirmOrderBtn.addEventListener('click', () => {
+            console.log('📋 Confirm order button clicked!');
+            Cart.openOrderModal();
+        });
+        console.log('✅ confirmOrderBtn listener attached');
+    }
+
+    // Order Modal controls
+    if (closeOrderModal) {
+        closeOrderModal.addEventListener('click', () => Cart.closeOrderModal());
+    }
+
+    if (orderModalOverlay) {
+        orderModalOverlay.addEventListener('click', () => Cart.closeOrderModal());
+    }
+
+    if (backToCartBtn) {
+        backToCartBtn.addEventListener('click', () => Cart.backToCart());
+    }
+
+    if (sendWhatsAppBtn) {
+        sendWhatsAppBtn.addEventListener('click', () => {
+            console.log('🚀 Send WhatsApp button clicked!');
             Cart.checkout();
         });
-        console.log('✅ checkoutBtn listener attached');
-    } else {
-        console.error('❌ checkoutBtn not found');
+        console.log('✅ sendWhatsAppBtn listener attached');
     }
+
+    // Close with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            Cart.closeOrderModal();
+        }
+    });
 });

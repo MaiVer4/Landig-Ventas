@@ -202,11 +202,54 @@
                 <span>Total:</span>
                 <span id="cartTotal">$0.00</span>
             </div>
-            <button class="btn btn-primary btn-checkout" id="checkoutBtn">
-                <i class="fab fa-whatsapp"></i> Pedir por WhatsApp
+            <button class="btn btn-primary btn-checkout" id="confirmOrderBtn">
+                <i class="fas fa-check-circle"></i> Confirmar Pedido
             </button>
         </div>
     </aside>
+
+    <!-- Order Confirmation Modal -->
+    <div class="order-modal-overlay" id="orderModalOverlay"></div>
+    <div class="order-modal" id="orderModal">
+        <div class="order-modal-header">
+            <h3><i class="fas fa-receipt"></i> Confirmar Pedido</h3>
+            <button class="order-modal-close" id="closeOrderModal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="order-modal-body">
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <h4><i class="fas fa-shopping-bag"></i> Resumen del Pedido</h4>
+                <div class="order-items-list" id="orderItemsList">
+                    <!-- Items injected here -->
+                </div>
+                <div class="order-total-row">
+                    <span>Total a Pagar:</span>
+                    <span class="order-total-amount" id="orderTotalAmount">$0</span>
+                </div>
+            </div>
+            
+            <!-- Customer Info Form -->
+            <div class="customer-form">
+                <h4><i class="fas fa-user"></i> Datos de Facturación</h4>
+                <div class="form-group">
+                    <label for="customerName">Nombre y Apellidos *</label>
+                    <input type="text" id="customerName" placeholder="Ej: Juan Pérez García" required>
+                </div>
+                <div class="form-group">
+                    <label for="customerPhone">Número de Teléfono *</label>
+                    <input type="tel" id="customerPhone" placeholder="Ej: 300 123 4567" required>
+                </div>
+            </div>
+        </div>
+        <div class="order-modal-footer">
+            <button class="btn btn-secondary" id="backToCartBtn">
+                <i class="fas fa-arrow-left"></i> Volver al Carrito
+            </button>
+            <button class="btn btn-primary btn-whatsapp" id="sendWhatsAppBtn">
+                <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
+            </button>
+        </div>
+    </div>
 
     <!-- Product Detail Modal -->
     <div class="product-modal-overlay" id="productModalOverlay" aria-hidden="true"></div>
