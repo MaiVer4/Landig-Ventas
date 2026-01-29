@@ -952,44 +952,60 @@ const Admin = {
     },
 
     saveProduct() {
-        const id = String(document.getElementById('productId').value || '');
-        const isOffer = document.getElementById('pIsOffer').checked;
+        try {
+            const id = String(document.getElementById('productId').value || '');
+            const isOffer = document.getElementById('pIsOffer').checked;
 
-        // Collect all image URLs and filter out empty ones
-        const images = [
-            document.getElementById('pImage1').value.trim(),
-            document.getElementById('pImage2').value.trim(),
-            document.getElementById('pImage3').value.trim(),
-            document.getElementById('pImage4').value.trim()
-        ].filter(url => url !== '');
-        
-        // Ensure at least one image (use placeholder if none provided)
-        const gallery = images.length > 0 ? images : ['https://via.placeholder.com/400'];
-        const mainImage = gallery[0];
+            // Collect all image URLs and filter out empty ones
+            const img1 = document.getElementById('pImage1');
+            const img2 = document.getElementById('pImage2');
+            const img3 = document.getElementById('pImage3');
+            const img4 = document.getElementById('pImage4');
 
-        const newProd = {
-            id: id ? id : String(Date.now()),
-            name: document.getElementById('pName').value,
-            description: document.getElementById('pDesc').value,
-            price: parseFloat(document.getElementById('pPrice').value),
-            category: document.getElementById('pCategory').value,
-            stock: parseInt(document.getElementById('pStock').value),
-            image: mainImage,
-            gallery: gallery,
-            isOffer: isOffer,
-            discountPercent: isOffer ? parseInt(document.getElementById('pDiscount').value) : 0
-        };
+            if (!img1 || !img2 || !img3 || !img4) {
+                console.error('❌ Image input fields not found');
+                alert('Error: No se encontraron los campos de imagen');
+                return;
+            }
 
-        if (id) {
-            const index = this.products.findIndex(p => String(p.id) === String(id));
-            if (index !== -1) this.products[index] = newProd;
-        } else {
-            this.products.push(newProd);
+            const images = [
+                img1.value.trim(),
+                img2.value.trim(),
+                img3.value.trim(),
+                img4.value.trim()
+            ].filter(url => url !== '');
+            
+            // Ensure at least one image (use placeholder if none provided)
+            const gallery = images.length > 0 ? images : ['https://via.placeholder.com/400'];
+            const mainImage = gallery[0];
+
+            const newProd = {
+                id: id ? id : String(Date.now()),
+                name: document.getElementById('pName').value,
+                description: document.getElementById('pDesc').value,
+                price: parseFloat(document.getElementById('pPrice').value),
+                category: document.getElementById('pCategory').value,
+                stock: parseInt(document.getElementById('pStock').value),
+                image: mainImage,
+                gallery: gallery,
+                isOffer: isOffer,
+                discountPercent: isOffer ? parseInt(document.getElementById('pDiscount').value || 0) : 0
+            };
+
+            if (id) {
+                const index = this.products.findIndex(p => String(p.id) === String(id));
+                if (index !== -1) this.products[index] = newProd;
+            } else {
+                this.products.push(newProd);
+            }
+
+            this.saveData();
+            window.closeProductModal();
+            this.renderAll();
+        } catch (error) {
+            console.error('❌ Error saving product:', error);
+            alert('Error al guardar producto: ' + error.message);
         }
-
-        this.saveData();
-        window.closeProductModal();
-        this.renderAll();
     },
 
     saveData() {
