@@ -848,7 +848,13 @@ const Admin = {
                     document.getElementById('pPrice').value = p.price;
                     document.getElementById('pStock').value = p.stock;
                     document.getElementById('pCategory').value = p.category;
-                    document.getElementById('pImage').value = p.image;
+                    
+                    // Handle multiple images
+                    const gallery = p.gallery || [p.image];
+                    document.getElementById('pImage1').value = gallery[0] || p.image || '';
+                    document.getElementById('pImage2').value = gallery[1] || '';
+                    document.getElementById('pImage3').value = gallery[2] || '';
+                    document.getElementById('pImage4').value = gallery[3] || '';
                     
                     // Offer fields
                     const isOffer = p.isOffer || false;
@@ -949,6 +955,18 @@ const Admin = {
         const id = String(document.getElementById('productId').value || '');
         const isOffer = document.getElementById('pIsOffer').checked;
 
+        // Collect all image URLs and filter out empty ones
+        const images = [
+            document.getElementById('pImage1').value.trim(),
+            document.getElementById('pImage2').value.trim(),
+            document.getElementById('pImage3').value.trim(),
+            document.getElementById('pImage4').value.trim()
+        ].filter(url => url !== '');
+        
+        // Ensure at least one image (use placeholder if none provided)
+        const gallery = images.length > 0 ? images : ['https://via.placeholder.com/400'];
+        const mainImage = gallery[0];
+
         const newProd = {
             id: id ? id : String(Date.now()),
             name: document.getElementById('pName').value,
@@ -956,7 +974,8 @@ const Admin = {
             price: parseFloat(document.getElementById('pPrice').value),
             category: document.getElementById('pCategory').value,
             stock: parseInt(document.getElementById('pStock').value),
-            image: document.getElementById('pImage').value || 'https://via.placeholder.com/150',
+            image: mainImage,
+            gallery: gallery,
             isOffer: isOffer,
             discountPercent: isOffer ? parseInt(document.getElementById('pDiscount').value) : 0
         };

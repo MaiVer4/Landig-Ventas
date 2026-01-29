@@ -240,8 +240,8 @@ const Cart = {
         }
 
         // 3. Abrir WhatsApp con manejo de bloqueo de popups
-        const phoneNumber = "573219395309"; 
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        const phoneNumber = "573219395309"; 
         const win = window.open(url, '_blank');
 
         if (!win || win.closed || typeof win.closed === 'undefined') {
