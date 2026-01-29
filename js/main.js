@@ -16,7 +16,7 @@ const ProductManager = {
             // Normalize fields to keep UI stable even si faltan columnas opcionales
             this.products = inStock.map(p => ({
                 ...p,
-                gallery: p.gallery || [p.image, p.image, p.image].filter(Boolean),
+                gallery: Array.isArray(p.gallery) && p.gallery.length > 0 ? p.gallery : [p.image].filter(Boolean),
                 reviews: p.reviews || [],
                 rating: p.rating || 0,
                 fullDescription: p.fullDescription || p.description || ''
@@ -194,7 +194,9 @@ function openProductModal(productId) {
     };
     
     // Gallery
-    const gallery = product.gallery || [product.image, product.image, product.image];
+    const gallery = Array.isArray(product.gallery) && product.gallery.length > 0 
+        ? product.gallery 
+        : [product.image];
     const mainImg = document.getElementById('galleryMainImg');
     mainImg.src = gallery[0];
     mainImg.alt = product.name;
