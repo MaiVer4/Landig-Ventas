@@ -6,7 +6,7 @@
 
 E-commerce moderno y completamente funcional con sistema de gestión de inventario y pedidos. Perfecto para negocios que desean vender por WhatsApp con un catálogo profesional.
 
-![NovaMarket Preview](https://via.placeholder.com/1200x600/6366f1/ffffff?text=NovaMarket+Preview)
+![NovaMarket Preview](https://maiver4.github.io/Luxury-Distillates/)
 
 ## ✨ Características Principales
 
@@ -30,9 +30,9 @@ E-commerce moderno y completamente funcional con sistema de gestión de inventar
 
 ## 🚀 Demo en Vivo
 
-**Tienda:** [https://maiver4.github.io/Landig-Ventas/](https://maiver4.github.io/Landig-Ventas/)
+**Tienda:** [https://maiver4.github.io/Landig-Ventas/](https://maiver4.github.io/Luxury-Distillates/)
 
-**Admin:** [https://maiver4.github.io/Landig-Ventas/admin.html](https://maiver4.github.io/Landig-Ventas/admin.html)
+**Admin:** [https://maiver4.github.io/Landig-Ventas/admin.html](https://maiver4.github.io/Luxury-Distillates/admin.html)
 
 ## 📸 Screenshots
 
