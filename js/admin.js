@@ -97,6 +97,14 @@ const Admin = {
                 p.isFeatured = String(p.id) === String(persistedFeaturedId);
             });
         }
+
+        // Restore isVisible from persisted hiddenProducts list.
+        // isVisible is NOT a Supabase column, so we keep it in a separate key
+        // that survives every Supabase reload.
+        const hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
+        this.products.forEach(p => {
+            p.isVisible = !hiddenIds.includes(String(p.id));
+        });
         
         // Save normalized products to localStorage
         localStorage.setItem('products', JSON.stringify(this.products));
@@ -232,12 +240,17 @@ const Admin = {
                 statusText = 'Bajo Stock';
             }
 
+            const isVisible = p.isVisible !== false; // default true if undefined
+
             return `
-            <tr>
+            <tr class="${isVisible ? '' : 'opacity-50'}">
                 <td>
                     <img src="${p.image}" class="w-10 h-10 rounded-lg object-cover shadow-sm border border-slate-200">
                 </td>
-                <td class="font-medium text-slate-700">${p.name}</td>
+                <td class="font-medium text-slate-700">
+                    ${p.name}
+                    ${!isVisible ? '<span class="ml-1 text-xs font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Oculto</span>' : ''}
+                </td>
                 <td>
                     <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-md uppercase">${p.category}</span>
                 </td>
@@ -250,6 +263,9 @@ const Admin = {
                         <button onclick="openProductModal('${p.id}')" class="action-btn btn-edit" title="Editar">
                             <i class="fa-solid fa-pen"></i>
                         </button>
+                                <button onclick="Admin.toggleVisible('${p.id}')" class="action-btn" title="${isVisible ? 'Ocultar producto' : 'Mostrar producto'}" style="color:${isVisible ? '#10b981' : '#94a3b8'}">
+                                    <i class="fa-solid ${isVisible ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                                </button>
                                 <button onclick="Admin.toggleFeatured('${p.id}')" class="action-btn btn-feature" title="Destacar/No destacar">
                                     <i class="${p.isFeatured ? 'fa-solid fa-star text-yellow-400' : 'fa-regular fa-star text-slate-300'}"></i>
                                 </button>
@@ -273,7 +289,25 @@ const Admin = {
                     this.products.forEach(prod => { if (String(prod.id) !== String(id)) prod.isFeatured = false; });
                 }
                 p.isFeatured = newVal;
-                this.saveData();
+                this.saveData(p.id);
+                this.renderAll();
+            },
+
+            toggleVisible(id) {
+                const p = this.products.find(x => String(x.id) === String(id));
+                if (!p) return;
+                // Toggle: hidden → visible, visible → hidden
+                p.isVisible = p.isVisible === false ? true : false;
+                // Persist hidden IDs in a dedicated key so the value survives Supabase reloads
+                // (isVisible is not stored in the Supabase Products table)
+                let hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
+                if (!p.isVisible) {
+                    if (!hiddenIds.includes(String(id))) hiddenIds.push(String(id));
+                } else {
+                    hiddenIds = hiddenIds.filter(x => x !== String(id));
+                }
+                localStorage.setItem('hiddenProducts', JSON.stringify(hiddenIds));
+                this.saveData(p.id);
                 this.renderAll();
             },
 
@@ -352,6 +386,21 @@ const Admin = {
                     discountContainer.classList.remove('hidden');
                 } else {
                     discountContainer.classList.add('hidden');
+                }
+            });
+        }
+
+        // Visible Toggle Badge
+        const visibleCheck = document.getElementById('pIsVisible');
+        const visibleBadge = document.getElementById('pIsVisibleBadge');
+        if (visibleCheck && visibleBadge) {
+            visibleCheck.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    visibleBadge.textContent = 'Visible';
+                    visibleBadge.className = 'text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700';
+                } else {
+                    visibleBadge.textContent = 'Oculto';
+                    visibleBadge.className = 'text-xs font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-500';
                 }
             });
         }
@@ -813,10 +862,27 @@ const Admin = {
                     const isFeatured = p.isFeatured || false;
                     const featuredEl = document.getElementById('pIsFeatured');
                     if (featuredEl) featuredEl.checked = isFeatured;
+                    // Visible
+                    const isVisible = p.isVisible !== false;
+                    const visibleEl = document.getElementById('pIsVisible');
+                    const visibleBadge = document.getElementById('pIsVisibleBadge');
+                    if (visibleEl) visibleEl.checked = isVisible;
+                    if (visibleBadge) {
+                        visibleBadge.textContent = isVisible ? 'Visible' : 'Oculto';
+                        visibleBadge.className = isVisible
+                            ? 'text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700'
+                            : 'text-xs font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-500';
+                    }
                 }
             } else {
                 title.innerText = 'Nuevo Producto';
                 document.getElementById('productId').value = '';
+                // Reset visibility badge to default (visible) for new products
+                const newBadge = document.getElementById('pIsVisibleBadge');
+                if (newBadge) {
+                    newBadge.textContent = 'Visible';
+                    newBadge.className = 'text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700';
+                }
             }
         };
 
@@ -1156,6 +1222,7 @@ const Admin = {
                 image: mainImage,
                 gallery: gallery,
                 isFeatured: document.getElementById('pIsFeatured') ? document.getElementById('pIsFeatured').checked : false,
+                isVisible: document.getElementById('pIsVisible') ? document.getElementById('pIsVisible').checked : true,
                 isOffer: isOffer,
                 discountPercent: isOffer ? parseInt(document.getElementById('pDiscount').value || 0) : 0
             };

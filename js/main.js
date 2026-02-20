@@ -11,7 +11,12 @@ const ProductManager = {
 
         try {
             const data = await window.supabaseHelpers.fetchProducts();
-            const inStock = Array.isArray(data) ? data.filter(p => (p.stock || 0) > 0) : [];
+            // Apply admin visibility overrides. isVisible is not a Supabase column;
+            // hidden product IDs are stored in a dedicated localStorage key by the admin.
+            const hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
+            const inStock = Array.isArray(data)
+                ? data.filter(p => (p.stock || 0) > 0 && !hiddenIds.includes(String(p.id)))
+                : [];
 
             // Normalize fields to keep UI stable even si faltan columnas opcionales
             this.products = inStock.map(p => ({

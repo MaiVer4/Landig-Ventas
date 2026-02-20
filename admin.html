@@ -315,12 +315,12 @@
                         <form id="addCategoryForm" class="space-y-4" onsubmit="Admin.addCategory(event)">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">ID (Slug)</label>
-                                <input type="text" id="catSlug" placeholder="ej: videojuegos" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none lowercase">
+                                <input type="text" id="catSlug" placeholder="ej: destilados-cbd" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none lowercase">
                                 <p class="text-xs text-slate-400 mt-1">Sin espacios ni caracteres especiales.</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nombre Visible</label>
-                                <input type="text" id="catName" placeholder="ej: Videojuegos" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <input type="text" id="catName" placeholder="ej: Destilados CBD" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                             </div>
                             <button type="submit" class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
                                 Agregar Categoría
@@ -375,7 +375,7 @@
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden group">
                         <div class="z-10 relative">
                             <p class="text-slate-500 font-medium text-sm mb-1">Productos Estrella</p>
-                            <h3 class="text-2xl font-bold text-slate-800" id="topCategoryDisplay">Vapes</h3>
+                            <h3 class="text-2xl font-bold text-slate-800" id="topCategoryDisplay">Destilados THC</h3>
                             <div class="mt-2 text-xs text-slate-400">
                                 Categoría con mayor rotación
                             </div>
@@ -474,6 +474,17 @@
                     <p class="text-xs text-slate-400">Si marcas varios productos, se mostrará el primero marcado en la portada.</p>
                 </div>
 
+                <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200 mt-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="pIsVisible" class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-400" checked>
+                            <label for="pIsVisible" class="font-medium text-slate-700 select-none cursor-pointer">Mostrar producto en la tienda</label>
+                        </div>
+                        <span id="pIsVisibleBadge" class="text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Visible</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Si está desactivado, el producto no aparecerá en la tienda aunque tenga stock.</p>
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Stock</label>
                     <input type="number" id="pStock" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -482,11 +493,11 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
                     <select id="pCategory" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <option value="tecnologia">Tecnología</option>
-                        <option value="moda">Moda</option>
-                        <option value="hogar">Hogar</option>
-                        <option value="deportes">Deportes</option>
-                        <option value="juguetes">Juguetes</option>
+                        <option value="destilados-thc">Destilados THC</option>
+                        <option value="baterias-para-destilados">Baterías para Destilados</option>
+                        <option value="destilados-importados">Destilados Importados</option>
+                        <option value="destilados-nacionales">Destilados Nacionales</option>
+                        <option value="ofertas">Ofertas</option>
                     </select>
                 </div>
 
