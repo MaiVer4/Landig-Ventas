@@ -79,14 +79,23 @@
         };
       });
     },
+    async patchProduct(id, fields) {
+      await handleResult(
+        client.from('Products').update(fields).eq('id', String(id))
+      );
+    },
     async upsertProduct(product) {
-      // 'isFeatured' and 'categories' are client-side fields not stored in Supabase.
-      // Strip them to prevent "column does not exist" errors that silently block saves.
-      const { isFeatured, categories, isVisible, ...productData } = product;
+      // Map client-side field names → Supabase column names.
+      // The retry handler below will strip unrecognised columns gracefully
+      // if the columns haven't been added to the table yet.
+      const { isFeatured, isVisible, categories, ...productData } = product;
 
       const payload = { 
         ...productData, 
-        id: String(product.id || Date.now())
+        id: String(product.id || Date.now()),
+        is_visible:  isVisible  !== false,       // true by default
+        is_featured: isFeatured === true,         // false by default
+        categories:  Array.isArray(categories) ? categories : []
       };
       
       // Only include gallery if it exists and has items

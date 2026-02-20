@@ -109,32 +109,36 @@ const Admin = {
             }
         }
 
-        // Restore isFeatured flag from persisted featuredProductId
+        // Restore isFeatured: prefer is_featured column from Supabase (cross-device),
+        // fall back to localStorage featuredProductId for old data.
         const persistedFeaturedId = localStorage.getItem('featuredProductId');
-        if (persistedFeaturedId) {
-            this.products.forEach(p => {
-                p.isFeatured = String(p.id) === String(persistedFeaturedId);
-            });
-        }
-
-        // Restore isVisible from persisted hiddenProducts list.
-        const hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
         this.products.forEach(p => {
-            p.isVisible = !hiddenIds.includes(String(p.id));
+            if (p.is_featured != null) {
+                p.isFeatured = p.is_featured === true;
+            } else {
+                p.isFeatured = persistedFeaturedId ? String(p.id) === String(persistedFeaturedId) : false;
+            }
         });
 
-        // Restore categories[] from dedicated productCategories key.
-        // 'categories' is not a Supabase column; it is persisted separately so
-        // multi-category assignments survive every Supabase reload.
+        // Restore isVisible: prefer is_visible column from Supabase (cross-device),
+        // fall back to localStorage hiddenProducts for old data.
+        const hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
+        this.products.forEach(p => {
+            if (p.is_visible != null) {
+                p.isVisible = p.is_visible !== false;
+            } else {
+                p.isVisible = !hiddenIds.includes(String(p.id));
+            }
+        });
+
+        // Restore categories[]: prefer categories column from Supabase (cross-device),
+        // fall back to localStorage productCategories for old data.
         const storedCats = JSON.parse(localStorage.getItem('productCategories') || '{}');
         this.products.forEach(p => {
-            if (storedCats[String(p.id)]) {
-                p.categories = storedCats[String(p.id)];
-                p.category = p.categories[0] || p.category;
-            } else {
-                // Fallback: single category as one-element array
-                p.categories = p.category ? [p.category] : [];
-            }
+            const sbCats = Array.isArray(p.categories) && p.categories.length > 0 ? p.categories : null;
+            const cats = sbCats || storedCats[String(p.id)] || (p.category ? [p.category] : []);
+            p.categories = cats;
+            p.category = cats[0] || p.category;
         });
         
         // Save normalized products to localStorage
@@ -316,27 +320,38 @@ const Admin = {
         }).join('');
     },
 
-            toggleFeatured(id) {
+            async toggleFeatured(id) {
                 const p = this.products.find(x => String(x.id) === String(id));
                 if (!p) return;
-                // Toggle
                 const newVal = !p.isFeatured;
-                // If setting to true, unset others
+                // If featuring, un-feature all others both locally and in Supabase
                 if (newVal) {
-                    this.products.forEach(prod => { if (String(prod.id) !== String(id)) prod.isFeatured = false; });
+                    this.products.forEach(prod => {
+                        if (String(prod.id) !== String(id)) {
+                            prod.isFeatured = false;
+                            if (window.supabaseHelpers && window.supabaseHelpers.patchProduct) {
+                                window.supabaseHelpers.patchProduct(String(prod.id), { is_featured: false })
+                                    .catch(e => console.warn('⚠️ unfeature error', e));
+                            }
+                        }
+                    });
                 }
                 p.isFeatured = newVal;
-                this.saveData(p.id);
+                // Sync to Supabase for cross-device persistence
+                if (window.supabaseHelpers && window.supabaseHelpers.patchProduct) {
+                    try {
+                        await window.supabaseHelpers.patchProduct(String(id), { is_featured: newVal });
+                    } catch (err) { console.error('❌ Error sincronizando destacado:', err); }
+                }
+                this.saveData(p.id, true);
                 this.renderAll();
             },
 
-            toggleVisible(id) {
+            async toggleVisible(id) {
                 const p = this.products.find(x => String(x.id) === String(id));
                 if (!p) return;
-                // Toggle: hidden → visible, visible → hidden
                 p.isVisible = p.isVisible === false ? true : false;
-                // Persist hidden IDs in a dedicated key so the value survives Supabase reloads
-                // (isVisible is not stored in the Supabase Products table)
+                // Keep localStorage in sync as fallback for old browsers
                 let hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
                 if (!p.isVisible) {
                     if (!hiddenIds.includes(String(id))) hiddenIds.push(String(id));
@@ -344,7 +359,13 @@ const Admin = {
                     hiddenIds = hiddenIds.filter(x => x !== String(id));
                 }
                 localStorage.setItem('hiddenProducts', JSON.stringify(hiddenIds));
-                this.saveData(p.id);
+                // Sync to Supabase for cross-device persistence
+                if (window.supabaseHelpers && window.supabaseHelpers.patchProduct) {
+                    try {
+                        await window.supabaseHelpers.patchProduct(String(id), { is_visible: p.isVisible });
+                    } catch (err) { console.error('❌ Error sincronizando visibilidad:', err); }
+                }
+                this.saveData(p.id, true);
                 this.renderAll();
             },
 

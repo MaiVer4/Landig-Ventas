@@ -47,18 +47,23 @@ const ProductManager = {
                     'ofertas': 'Ofertas'
                 };
             }
-            // Apply admin visibility overrides. isVisible is not a Supabase column;
-            // hidden product IDs are stored in a dedicated localStorage key by the admin.
+            // Filter by visibility: is_visible column (Supabase, cross-device) is source of truth.
+            // Fall back to localStorage hiddenProducts for devices/browsers that haven't synced yet.
             const hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
             const inStock = Array.isArray(data)
-                ? data.filter(p => (p.stock || 0) > 0 && !hiddenIds.includes(String(p.id)))
+                ? data.filter(p => {
+                    if ((p.stock || 0) <= 0) return false;
+                    if (p.is_visible === false) return false;  // Supabase column
+                    if (p.is_visible == null && hiddenIds.includes(String(p.id))) return false; // localStorage fallback
+                    return true;
+                })
                 : [];
 
-            // Normalize fields to keep UI stable even si faltan columnas opcionales
-            // Restore categories[] from dedicated localStorage key (not a Supabase column)
+            // Normalize fields — categories column from Supabase takes priority over localStorage
             const storedCats = JSON.parse(localStorage.getItem('productCategories') || '{}');
             this.products = inStock.map(p => {
-                const cats = storedCats[String(p.id)] || (p.category ? [p.category] : []);
+                const sbCats = Array.isArray(p.categories) && p.categories.length > 0 ? p.categories : null;
+                const cats = sbCats || storedCats[String(p.id)] || (p.category ? [p.category] : []);
                 return {
                     ...p,
                     category: cats[0] || p.category || '',
@@ -136,9 +141,10 @@ const ProductManager = {
 
         if (!heroTitle || !heroImage) return;
 
-        // Prefer persisted featuredProductId (saved by admin) → isFeatured flag → first product
+        // Source of truth order: is_featured Supabase column → localStorage featuredProductId → first product
         const _fid = localStorage.getItem('featuredProductId');
-        let featured = _fid ? this.products.find(p => String(p.id) === String(_fid)) : null;
+        let featured = this.products.find(p => p.is_featured === true);
+        if (!featured) featured = _fid ? this.products.find(p => String(p.id) === String(_fid)) : null;
         if (!featured) featured = this.products.find(p => p.isFeatured) || this.products[0];
         if (!featured) {
             heroTitle.textContent = 'Próximamente';
