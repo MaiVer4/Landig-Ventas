@@ -19,13 +19,25 @@ const ProductManager = {
             return;
         }
 
+        let rawCategories = [];
         try {
             const data = await window.supabaseHelpers.fetchProducts();
-            // Build slug → name map from categories stored by the admin
-            const storedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
+            // Build slug → name map: try Supabase first, then localStorage, then defaults
+            if (window.supabaseHelpers.fetchCategories) {
+                try {
+                    const sbCats = await window.supabaseHelpers.fetchCategories();
+                    if (Array.isArray(sbCats) && sbCats.length > 0) {
+                        rawCategories = sbCats;
+                        localStorage.setItem('categories', JSON.stringify(sbCats));
+                    }
+                } catch (e) { /* silent fallback */ }
+            }
+            if (!rawCategories.length) {
+                rawCategories = JSON.parse(localStorage.getItem('categories') || '[]');
+            }
             this.categoryMap = {};
-            storedCategories.forEach(c => { this.categoryMap[c.slug] = c.name; });
-            // Fallback defaults in case localStorage is empty
+            rawCategories.forEach(c => { this.categoryMap[c.slug] = c.name; });
+            // Fallback defaults in case both Supabase and localStorage are empty
             if (!Object.keys(this.categoryMap).length) {
                 this.categoryMap = {
                     'destilados-thc': 'Destilados THC',
@@ -66,6 +78,51 @@ const ProductManager = {
         this.renderProducts('all');
         // Render featured product in hero (if any)
         this.renderFeatured();
+        // Render filter buttons with categories loaded from Supabase
+        this.renderFilterButtons(rawCategories);
+    },
+
+    renderFilterButtons(categoriesList) {
+        const container = document.getElementById('categoryFilters');
+        if (!container) return;
+
+        // If no categories provided, use defaults
+        if (!categoriesList || !categoriesList.length) {
+            categoriesList = Object.entries(this.categoryMap).map(([slug, name], i) => ({
+                id: `cat-${i + 1}`, name, slug, order: i, visible: true
+            }));
+        }
+
+        container.innerHTML = '';
+
+        // "Todos" button
+        const allBtn = document.createElement('button');
+        allBtn.className = 'filter-btn active';
+        allBtn.setAttribute('data-category', 'all');
+        allBtn.textContent = 'Todos';
+        container.appendChild(allBtn);
+
+        // One button per visible category
+        categoriesList.forEach(cat => {
+            if (cat.visible !== false) {
+                const btn = document.createElement('button');
+                btn.className = 'filter-btn';
+                btn.setAttribute('data-category', cat.slug);
+                const icon = cat.slug === 'ofertas' ? '<i class="fas fa-percent"></i> ' : '';
+                btn.innerHTML = icon + cat.name;
+                container.appendChild(btn);
+            }
+        });
+
+        // Attach click listeners
+        const allBtns = container.querySelectorAll('.filter-btn');
+        allBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                allBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                ProductManager.renderProducts(btn.getAttribute('data-category'));
+            });
+        });
     },
 
     renderFeatured() {
@@ -502,66 +559,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Render Dynamic Filters from LocalStorage Categories
-    const categoriesContainer = document.getElementById('categoryFilters');
-    const storedCategories = localStorage.getItem('categories');
-    let categoriesList = [];
-
-    // Default Fallback matching Admin defaults if LS empty
-    if (storedCategories) {
-        try { categoriesList = JSON.parse(storedCategories); } catch (e) { /* datos corruptos — usar defaults */ }
-    }
-    if (!categoriesList.length) {
-        categoriesList = [
-            { name: 'Destilados THC', slug: 'destilados-thc', visible: true },
-            { name: 'Baterías para Destilados', slug: 'baterias-para-destilados', visible: true },
-            { name: 'Destilados Importados', slug: 'destilados-importados', visible: true },
-            { name: 'Destilados Nacionales', slug: 'destilados-nacionales', visible: true },
-            { name: 'Ofertas', slug: 'ofertas', visible: true }
-        ];
-    }
-
-    if (categoriesContainer) {
-        // Clear existing except static if any (we will rebuild all)
-        categoriesContainer.innerHTML = '';
-
-        // 1. "Todos" Button (Always Present)
-        const allBtn = document.createElement('button');
-        allBtn.className = 'filter-btn active';
-        allBtn.setAttribute('data-category', 'all');
-        allBtn.textContent = 'Todos';
-        categoriesContainer.appendChild(allBtn);
-
-        // 2. Dynamic Buttons
-        categoriesList.forEach(cat => {
-            if (cat.visible) {
-                const btn = document.createElement('button');
-                btn.className = 'filter-btn';
-                btn.setAttribute('data-category', cat.slug);
-                
-                // Icon logic for specific known types or generic
-                let iconHtml = '';
-                if(cat.slug === 'ofertas') iconHtml = '<i class="fas fa-percent mr-1"></i> ';
-                
-                btn.innerHTML = iconHtml + cat.name;
-                categoriesContainer.appendChild(btn);
-            }
-        });
-
-        // 3. Re-attach Event Listeners
-        const filterBtns = document.querySelectorAll('.filter-btn');
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                // Remove active class from all
-                filterBtns.forEach(b => b.classList.remove('active'));
-                // Add to click
-                btn.classList.add('active');
-                // Filter
-                const category = btn.getAttribute('data-category');
-                ProductManager.renderProducts(category);
-            });
-        });
-    }
 });
 
 // ========================================

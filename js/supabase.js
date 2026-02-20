@@ -131,6 +131,31 @@
     },
     async deleteProduct(id) {
       await handleResult(client.from('Products').delete().eq('id', String(id)));
+    },
+    async fetchCategories() {
+      try {
+        return await handleResult(
+          client.from('Categories').select('*').order('order', { ascending: true })
+        );
+      } catch (e) {
+        console.warn('⚠️ Categories table not available:', e.message);
+        return [];
+      }
+    },
+    async upsertCategory(cat) {
+      await handleResult(
+        client.from('Categories').upsert({
+          id: String(cat.id),
+          name: cat.name,
+          slug: cat.slug,
+          order: typeof cat.order === 'number' ? cat.order : 0
+        })
+      );
+    },
+    async deleteCategory(id) {
+      await handleResult(
+        client.from('Categories').delete().eq('id', String(id))
+      );
     }
   };
 })();

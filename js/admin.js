@@ -7,26 +7,8 @@ const Admin = {
     pendingDeleteProductId: null,
 
     async init() {
-        // Load categories first (needed before loadProducts and auth)
-        const storedCategories = localStorage.getItem('categories');
-        if (storedCategories) {
-            try {
-                this.categories = JSON.parse(storedCategories);
-                this.categories.forEach(c => { if (typeof c.visible === 'undefined') c.visible = true; });
-            } catch (e) {
-                console.error('❌ Error parsing categories', e);
-            }
-        }
-        if (!this.categories.length) {
-            this.categories = [
-                { id: 1, name: 'Destilados THC', slug: 'destilados-thc', visible: true },
-                { id: 2, name: 'Baterías para Destilados', slug: 'baterias-para-destilados', visible: true },
-                { id: 3, name: 'Destilados Importados', slug: 'destilados-importados', visible: true },
-                { id: 4, name: 'Destilados Nacionales', slug: 'destilados-nacionales', visible: true },
-                { id: 99, name: 'Ofertas', slug: 'ofertas', visible: true }
-            ];
-            this.saveCategories();
-        }
+        // Load categories first (Supabase → localStorage → defaults)
+        await this.loadCategories();
 
         // loadProducts() handles Supabase → localStorage fallback internally
         await this.loadProducts();
@@ -35,6 +17,43 @@ const Admin = {
         this.setupAuth();
         if (localStorage.getItem('adminLoggedIn') === 'true') {
             await this.initDashboard();
+        }
+    },
+
+    async loadCategories() {
+        // Try Supabase first
+        if (window.supabaseHelpers && window.supabaseHelpers.fetchCategories) {
+            try {
+                const data = await window.supabaseHelpers.fetchCategories();
+                if (Array.isArray(data) && data.length > 0) {
+                    this.categories = data.map(c => ({ ...c, visible: c.visible !== false }));
+                    localStorage.setItem('categories', JSON.stringify(this.categories));
+                    return;
+                }
+            } catch (e) {
+                console.error('❌ Error cargando categorías desde Supabase', e);
+            }
+        }
+        // Fallback: localStorage
+        const stored = localStorage.getItem('categories');
+        if (stored) {
+            try {
+                this.categories = JSON.parse(stored);
+                this.categories.forEach(c => { if (typeof c.visible === 'undefined') c.visible = true; });
+            } catch (e) {
+                console.error('❌ Error leyendo categorías locales', e);
+            }
+        }
+        // Defaults if still empty
+        if (!this.categories.length) {
+            this.categories = [
+                { id: 'cat-1', name: 'Destilados THC', slug: 'destilados-thc', order: 1, visible: true },
+                { id: 'cat-2', name: 'Baterías para Destilados', slug: 'baterias-para-destilados', order: 2, visible: true },
+                { id: 'cat-3', name: 'Destilados Importados', slug: 'destilados-importados', order: 3, visible: true },
+                { id: 'cat-4', name: 'Destilados Nacionales', slug: 'destilados-nacionales', order: 4, visible: true },
+                { id: 'cat-5', name: 'Ofertas', slug: 'ofertas', order: 5, visible: true }
+            ];
+            this.saveCategories();
         }
     },
 
@@ -435,17 +454,17 @@ const Admin = {
                 <td class="font-medium text-slate-700">${c.name}</td>
                 <td class="text-center">
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" onchange="Admin.toggleCategory(${c.id})" class="sr-only peer" ${c.visible ? 'checked' : ''}>
+                        <input type="checkbox" onchange="Admin.toggleCategory('${c.id}')" class="sr-only peer" ${c.visible ? 'checked' : ''}>
                         <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
                 </td>
                 <td class="text-right">
                     <div class="flex justify-end gap-1">
                         ${c.slug !== 'ofertas' ? `
-                        <button onclick="Admin.editCategory(${c.id})" class="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 p-2 rounded transition-colors" title="Editar">
+                        <button onclick="Admin.editCategory('${c.id}')" class="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 p-2 rounded transition-colors" title="Editar">
                             <i class="fa-solid fa-pen"></i>
                         </button>
-                        <button onclick="Admin.deleteCategory(${c.id})" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors" title="Eliminar">
+                        <button onclick="Admin.deleteCategory('${c.id}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors" title="Eliminar">
                             <i class="fa-solid fa-trash"></i>
                         </button>` : '<span class="text-xs text-slate-400 italic">Sistema</span>'}
                     </div>
@@ -455,7 +474,7 @@ const Admin = {
     },
 
     toggleCategory(id) {
-        const cat = this.categories.find(c => c.id === id);
+        const cat = this.categories.find(c => String(c.id) === String(id));
         if(cat) {
             cat.visible = !cat.visible;
             this.saveCategories();
@@ -463,7 +482,7 @@ const Admin = {
     },
 
     editCategory(id) {
-        const cat = this.categories.find(c => c.id === id);
+        const cat = this.categories.find(c => String(c.id) === String(id));
         if (!cat) return;
         // Populate form
         document.getElementById('catEditId').value = cat.id;
@@ -488,7 +507,7 @@ const Admin = {
         document.getElementById('catCancelBtn').classList.add('hidden');
     },
 
-    saveCategory(e) {
+    async saveCategory(e) {
         e.preventDefault();
         const editId = document.getElementById('catEditId').value;
         const nameInput = document.getElementById('catName');
@@ -503,6 +522,7 @@ const Admin = {
             .replace(/[\s_-]+/g, '-')
             .replace(/^-+|-+$/g, '');
 
+        let savedCat = null;
         if (editId) {
             // Edit mode
             const cat = this.categories.find(c => String(c.id) === String(editId));
@@ -510,6 +530,7 @@ const Admin = {
                 const oldSlug = cat.slug;
                 cat.name = name;
                 cat.slug = slug;
+                savedCat = cat;
                 // Update slug on any product that referenced the old slug
                 this.products.forEach(p => {
                     if (p.category === oldSlug) p.category = slug;
@@ -526,15 +547,23 @@ const Admin = {
                 alert('Ya existe una categoría con ese slug.');
                 return;
             }
-            this.categories.push({
-                id: Date.now(),
+            savedCat = {
+                id: String(Date.now()),
                 name,
                 slug,
+                order: this.categories.length,
                 visible: true
-            });
+            };
+            this.categories.push(savedCat);
         }
 
         this.saveCategories();
+        // Sync to Supabase
+        if (savedCat && window.supabaseHelpers && window.supabaseHelpers.upsertCategory) {
+            try {
+                await window.supabaseHelpers.upsertCategory(savedCat);
+            } catch (err) { console.error('❌ Error sincronizando categoría a Supabase', err); }
+        }
         this.renderCategories();
         // Refresh category checkboxes inside open product modal
         const catContainer = document.getElementById('pCategoryContainer');
@@ -553,10 +582,16 @@ const Admin = {
         this.saveCategory(e);
     },
 
-    deleteCategory(id) {
+    async deleteCategory(id) {
         if (!confirm('¿Eliminar categoría? Los productos asociados podrían quedar sin categoría.')) return;
-        this.categories = this.categories.filter(c => c.id !== id);
+        this.categories = this.categories.filter(c => String(c.id) !== String(id));
         this.saveCategories();
+        // Sync to Supabase
+        if (window.supabaseHelpers && window.supabaseHelpers.deleteCategory) {
+            try {
+                await window.supabaseHelpers.deleteCategory(id);
+            } catch (err) { console.error('❌ Error eliminando categoría de Supabase', err); }
+        }
         this.renderCategories();
     },
 
