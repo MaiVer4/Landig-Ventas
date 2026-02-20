@@ -80,10 +80,9 @@
       });
     },
     async upsertProduct(product) {
-      // 'isFeatured' is a client-side flag stored in localStorage.featuredProductId
-      // It is NOT a column in the Supabase Products table — always strip it to avoid
-      // "column does not exist" errors that silently block all product saves.
-      const { isFeatured, ...productData } = product;
+      // 'isFeatured' and 'categories' are client-side fields not stored in Supabase.
+      // Strip them to prevent "column does not exist" errors that silently block saves.
+      const { isFeatured, categories, isVisible, ...productData } = product;
 
       const payload = { 
         ...productData, 

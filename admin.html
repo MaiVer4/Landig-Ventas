@@ -309,10 +309,16 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                     <!-- Add Form -->
+                     <!-- Add / Edit Form -->
                      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit">
-                        <h3 class="font-bold text-slate-700 mb-4">Añadir Nueva</h3>
-                        <form id="addCategoryForm" class="space-y-4" onsubmit="Admin.addCategory(event)">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-700" id="catFormTitle">Añadir Nueva</h3>
+                            <span id="catEditBadge" class="hidden text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+                                <i class="fa-solid fa-pen mr-1"></i>Editando
+                            </span>
+                        </div>
+                        <form id="addCategoryForm" class="space-y-4" onsubmit="Admin.saveCategory(event)">
+                            <input type="hidden" id="catEditId">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">ID (Slug)</label>
                                 <input type="text" id="catSlug" placeholder="ej: destilados-cbd" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none lowercase">
@@ -322,9 +328,14 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nombre Visible</label>
                                 <input type="text" id="catName" placeholder="ej: Destilados CBD" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                             </div>
-                            <button type="submit" class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
-                                Agregar Categoría
-                            </button>
+                            <div class="flex gap-2">
+                                <button type="submit" id="catSubmitBtn" class="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                                    Agregar Categoría
+                                </button>
+                                <button type="button" id="catCancelBtn" onclick="Admin.cancelEditCategory()" class="hidden px-4 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition-colors">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
                         </form>
                      </div>
 
@@ -335,10 +346,10 @@
                             <table class="w-full">
                                 <thead class="bg-slate-50">
                                     <tr>
-                                        <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase">ID</th>
+                                        <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase">Slug</th>
                                         <th class="py-3 px-4 text-left text-xs font-semibold text-slate-500 uppercase">Nombre</th>
                                         <th class="py-3 px-4 text-center text-xs font-semibold text-slate-500 uppercase">Visible en Tienda</th>
-                                        <th class="py-3 px-4 text-right text-xs font-semibold text-slate-500 uppercase">Acción</th>
+                                        <th class="py-3 px-4 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="categoriesList">
@@ -491,14 +502,11 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
-                    <select id="pCategory" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <option value="destilados-thc">Destilados THC</option>
-                        <option value="baterias-para-destilados">Baterías para Destilados</option>
-                        <option value="destilados-importados">Destilados Importados</option>
-                        <option value="destilados-nacionales">Destilados Nacionales</option>
-                        <option value="ofertas">Ofertas</option>
-                    </select>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Categorías <span class="text-xs text-slate-400 font-normal">(selecciona una o más)</span></label>
+                    <div id="pCategoryContainer" class="grid grid-cols-1 gap-1 bg-slate-50 border border-slate-200 rounded-lg p-3">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                    <p class="text-xs mt-1" id="pCategoryError" style="display:none; color:#ef4444;">Selecciona al menos una categoría.</p>
                 </div>
 
                 <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">

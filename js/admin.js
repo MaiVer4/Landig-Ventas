@@ -99,11 +99,23 @@ const Admin = {
         }
 
         // Restore isVisible from persisted hiddenProducts list.
-        // isVisible is NOT a Supabase column, so we keep it in a separate key
-        // that survives every Supabase reload.
         const hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
         this.products.forEach(p => {
             p.isVisible = !hiddenIds.includes(String(p.id));
+        });
+
+        // Restore categories[] from dedicated productCategories key.
+        // 'categories' is not a Supabase column; it is persisted separately so
+        // multi-category assignments survive every Supabase reload.
+        const storedCats = JSON.parse(localStorage.getItem('productCategories') || '{}');
+        this.products.forEach(p => {
+            if (storedCats[String(p.id)]) {
+                p.categories = storedCats[String(p.id)];
+                p.category = p.categories[0] || p.category;
+            } else {
+                // Fallback: single category as one-element array
+                p.categories = p.category ? [p.category] : [];
+            }
         });
         
         // Save normalized products to localStorage
@@ -252,7 +264,13 @@ const Admin = {
                     ${!isVisible ? '<span class="ml-1 text-xs font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Oculto</span>' : ''}
                 </td>
                 <td>
-                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-md uppercase">${p.category}</span>
+                    ${(() => {
+                        const cats = Array.isArray(p.categories) && p.categories.length > 0 ? p.categories : (p.category ? [p.category] : []);
+                        return cats.map(slug => {
+                            const catObj = this.categories.find(c => c.slug === slug);
+                            return `<span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-md uppercase mr-1">${catObj ? catObj.name : slug}</span>`;
+                        }).join('');
+                    })()}
                 </td>
                 <td class="text-slate-600 font-medium">$${p.price}</td>
                 <td>
@@ -413,8 +431,8 @@ const Admin = {
 
         tbody.innerHTML = this.categories.map(c => `
             <tr>
-                <td class="font-medium text-slate-700">#${c.id}</td>
-                <td>${c.name}</td>
+                <td class="font-medium text-slate-500 text-xs font-mono">${c.slug}</td>
+                <td class="font-medium text-slate-700">${c.name}</td>
                 <td class="text-center">
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" onchange="Admin.toggleCategory(${c.id})" class="sr-only peer" ${c.visible ? 'checked' : ''}>
@@ -422,10 +440,15 @@ const Admin = {
                     </label>
                 </td>
                 <td class="text-right">
-                    ${c.slug !== 'ofertas' ? `
-                    <button onclick="Admin.deleteCategory(${c.id})" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>` : '<span class="text-xs text-slate-400 italic">Sistema</span>'}
+                    <div class="flex justify-end gap-1">
+                        ${c.slug !== 'ofertas' ? `
+                        <button onclick="Admin.editCategory(${c.id})" class="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 p-2 rounded transition-colors" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="Admin.deleteCategory(${c.id})" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors" title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>` : '<span class="text-xs text-slate-400 italic">Sistema</span>'}
+                    </div>
                 </td>
             </tr>
         `).join('');
@@ -439,32 +462,95 @@ const Admin = {
         }
     },
 
-    addCategory(e) {
+    editCategory(id) {
+        const cat = this.categories.find(c => c.id === id);
+        if (!cat) return;
+        // Populate form
+        document.getElementById('catEditId').value = cat.id;
+        document.getElementById('catSlug').value = cat.slug;
+        document.getElementById('catName').value = cat.name;
+        // Switch form to edit mode UI
+        document.getElementById('catFormTitle').textContent = 'Editar Categoría';
+        document.getElementById('catEditBadge').classList.remove('hidden');
+        document.getElementById('catSubmitBtn').textContent = 'Guardar Cambios';
+        document.getElementById('catCancelBtn').classList.remove('hidden');
+        // Scroll to form
+        document.getElementById('addCategoryForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+
+    cancelEditCategory() {
+        document.getElementById('catEditId').value = '';
+        document.getElementById('catSlug').value = '';
+        document.getElementById('catName').value = '';
+        document.getElementById('catFormTitle').textContent = 'Añadir Nueva';
+        document.getElementById('catEditBadge').classList.add('hidden');
+        document.getElementById('catSubmitBtn').textContent = 'Agregar Categoría';
+        document.getElementById('catCancelBtn').classList.add('hidden');
+    },
+
+    saveCategory(e) {
         e.preventDefault();
+        const editId = document.getElementById('catEditId').value;
         const nameInput = document.getElementById('catName');
+        const slugInput = document.getElementById('catSlug');
         const name = nameInput.value.trim();
-        
-        if (!name) return;
+        const slugRaw = slugInput.value.trim();
 
-        // Simple slugify
-        const slug = name.toLowerCase()
-            .replace(/[^\w\s-]/g, '') // remove non-word chars
-            .replace(/[\s_-]+/g, '-') // collapse whitespace
-            .replace(/^-+|-+$/g, ''); // trim
+        if (!name || !slugRaw) return;
 
-        const newCat = {
-            id: Date.now(),
-            name: name,
-            slug: slug,
-            visible: true
-        };
+        const slug = slugRaw.toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
 
-        this.categories.push(newCat);
+        if (editId) {
+            // Edit mode
+            const cat = this.categories.find(c => String(c.id) === String(editId));
+            if (cat) {
+                const oldSlug = cat.slug;
+                cat.name = name;
+                cat.slug = slug;
+                // Update slug on any product that referenced the old slug
+                this.products.forEach(p => {
+                    if (p.category === oldSlug) p.category = slug;
+                    if (Array.isArray(p.categories)) {
+                        p.categories = p.categories.map(s => s === oldSlug ? slug : s);
+                    }
+                });
+                localStorage.setItem('products', JSON.stringify(this.products));
+            }
+            this.cancelEditCategory();
+        } else {
+            // Add mode — check for duplicate slug
+            if (this.categories.find(c => c.slug === slug)) {
+                alert('Ya existe una categoría con ese slug.');
+                return;
+            }
+            this.categories.push({
+                id: Date.now(),
+                name,
+                slug,
+                visible: true
+            });
+        }
+
         this.saveCategories();
         this.renderCategories();
-        
-        nameInput.value = '';
-        alert('Categoría agregada correctamente');
+        // Refresh category checkboxes inside open product modal
+        const catContainer = document.getElementById('pCategoryContainer');
+        if (catContainer) {
+            catContainer.innerHTML = this.categories.map(c => `
+                <label class="flex items-center gap-2 cursor-pointer hover:bg-white px-2 py-1.5 rounded-md transition-colors">
+                    <input type="checkbox" name="pCategoryCheck" value="${c.slug}" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer">
+                    <span class="text-sm text-slate-700 select-none">${c.name}</span>
+                </label>
+            `).join('');
+        }
+    },
+
+    addCategory(e) {
+        // Legacy alias kept for safety
+        this.saveCategory(e);
     },
 
     deleteCategory(id) {
@@ -814,17 +900,22 @@ const Admin = {
             const title = document.getElementById('modalTitle');
             const formObj = document.getElementById('addProductForm');
 
-            // Populate Categories dynamically
-            const catSelect = document.getElementById('pCategory');
-            if (catSelect && this.categories) {
-                catSelect.innerHTML = this.categories.map(c => 
-                    `<option value="${c.slug}">${c.name}</option>`
-                ).join('');
-                
-                // Add fallback option if empty?
-                if (this.categories.length === 0) {
-                     catSelect.innerHTML = '<option value="general">General</option>';
-                }
+            // Populate Categories dynamically as checkboxes (multi-select)
+            const catContainer = document.getElementById('pCategoryContainer');
+            if (catContainer) {
+                const catsToShow = this.categories.length > 0 ? this.categories : [
+                    { id: 1, name: 'Destilados THC', slug: 'destilados-thc' },
+                    { id: 2, name: 'Baterías para Destilados', slug: 'baterias-para-destilados' },
+                    { id: 3, name: 'Destilados Importados', slug: 'destilados-importados' },
+                    { id: 4, name: 'Destilados Nacionales', slug: 'destilados-nacionales' },
+                    { id: 99, name: 'Ofertas', slug: 'ofertas' }
+                ];
+                catContainer.innerHTML = catsToShow.map(c => `
+                    <label class="flex items-center gap-2 cursor-pointer hover:bg-white px-2 py-1.5 rounded-md transition-colors">
+                        <input type="checkbox" name="pCategoryCheck" value="${c.slug}" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer">
+                        <span class="text-sm text-slate-700 select-none">${c.name}</span>
+                    </label>
+                `).join('');
             }
             
             modal.classList.remove('hidden');
@@ -842,7 +933,15 @@ const Admin = {
                     document.getElementById('pDesc').value = p.description || '';
                     document.getElementById('pPrice').value = p.price;
                     document.getElementById('pStock').value = p.stock;
-                    document.getElementById('pCategory').value = p.category;
+                    
+                    // Check boxes for all categories this product belongs to
+                    const prodCats = Array.isArray(p.categories) && p.categories.length > 0
+                        ? p.categories
+                        : (p.category ? [p.category] : []);
+                    document.querySelectorAll('input[name="pCategoryCheck"]').forEach(cb => {
+                        cb.checked = prodCats.includes(cb.value);
+                    });
+                    if (document.getElementById('pCategoryError')) document.getElementById('pCategoryError').style.display = 'none';
                     
                     // Handle multiple images
                     const gallery = p.gallery || [p.image];
@@ -915,6 +1014,10 @@ const Admin = {
             const id = this.pendingDeleteProductId;
             if (!id) { window.cancelDeleteProduct(); return; }
             this.products = this.products.filter(p => String(p.id) !== String(id));
+            // Remove from productCategories
+            const storedCats = JSON.parse(localStorage.getItem('productCategories') || '{}');
+            delete storedCats[String(id)];
+            localStorage.setItem('productCategories', JSON.stringify(storedCats));
             this.saveData();
             if (window.supabaseHelpers && window.supabaseHelpers.deleteProduct) {
                 window.supabaseHelpers.deleteProduct(id).catch(err => console.error('❌ Error eliminando producto en Supabase', err));
@@ -1208,6 +1311,15 @@ const Admin = {
                 img4.value.trim()
             ].filter(url => url !== '');
             
+            // Collect checked categories (multi-select)
+            const checkedCats = [...document.querySelectorAll('input[name="pCategoryCheck"]:checked')].map(cb => cb.value);
+            if (checkedCats.length === 0) {
+                const errEl = document.getElementById('pCategoryError');
+                if (errEl) errEl.style.display = '';
+                return;
+            }
+            if (document.getElementById('pCategoryError')) document.getElementById('pCategoryError').style.display = 'none';
+
             // Ensure at least one image (use placeholder if none provided)
             const gallery = images.length > 0 ? images : ['https://via.placeholder.com/400'];
             const mainImage = gallery[0];
@@ -1217,7 +1329,8 @@ const Admin = {
                 name: document.getElementById('pName').value,
                 description: document.getElementById('pDesc').value,
                 price: parseFloat(document.getElementById('pPrice').value),
-                category: document.getElementById('pCategory').value,
+                category: checkedCats[0],
+                categories: checkedCats,
                 stock: parseInt(document.getElementById('pStock').value),
                 image: mainImage,
                 gallery: gallery,
@@ -1230,6 +1343,11 @@ const Admin = {
             if (newProd.isFeatured) {
                 this.products.forEach(prod => { if (String(prod.id) !== String(newProd.id)) prod.isFeatured = false; });
             }
+
+            // Persist multi-category assignment to its own localStorage key
+            const storedCats = JSON.parse(localStorage.getItem('productCategories') || '{}');
+            storedCats[String(newProd.id)] = newProd.categories;
+            localStorage.setItem('productCategories', JSON.stringify(storedCats));
 
             if (id) {
                 const index = this.products.findIndex(p => String(p.id) === String(id));

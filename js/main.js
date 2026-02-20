@@ -1,6 +1,16 @@
 // Product Data Manager
 const ProductManager = {
     products: [],
+    categoryMap: {}, // slug → visible name
+
+    // Resolve one or more slugs to their visible names
+    catName(slug) {
+        return this.categoryMap[slug] || slug;
+    },
+    catNames(slugs) {
+        if (!Array.isArray(slugs) || slugs.length === 0) return '';
+        return slugs.map(s => this.catName(s)).join(' · ');
+    },
 
     async init() {
         if (!(window.supabaseHelpers && window.supabaseHelpers.fetchProducts)) {
@@ -11,6 +21,20 @@ const ProductManager = {
 
         try {
             const data = await window.supabaseHelpers.fetchProducts();
+            // Build slug → name map from categories stored by the admin
+            const storedCategories = JSON.parse(localStorage.getItem('categories') || '[]');
+            this.categoryMap = {};
+            storedCategories.forEach(c => { this.categoryMap[c.slug] = c.name; });
+            // Fallback defaults in case localStorage is empty
+            if (!Object.keys(this.categoryMap).length) {
+                this.categoryMap = {
+                    'destilados-thc': 'Destilados THC',
+                    'baterias-para-destilados': 'Baterías para Destilados',
+                    'destilados-importados': 'Destilados Importados',
+                    'destilados-nacionales': 'Destilados Nacionales',
+                    'ofertas': 'Ofertas'
+                };
+            }
             // Apply admin visibility overrides. isVisible is not a Supabase column;
             // hidden product IDs are stored in a dedicated localStorage key by the admin.
             const hiddenIds = JSON.parse(localStorage.getItem('hiddenProducts') || '[]');
@@ -19,13 +43,20 @@ const ProductManager = {
                 : [];
 
             // Normalize fields to keep UI stable even si faltan columnas opcionales
-            this.products = inStock.map(p => ({
-                ...p,
-                gallery: Array.isArray(p.gallery) && p.gallery.length > 0 ? p.gallery : [p.image].filter(Boolean),
-                reviews: p.reviews || [],
-                rating: p.rating || 0,
-                fullDescription: p.fullDescription || p.description || ''
-            }));
+            // Restore categories[] from dedicated localStorage key (not a Supabase column)
+            const storedCats = JSON.parse(localStorage.getItem('productCategories') || '{}');
+            this.products = inStock.map(p => {
+                const cats = storedCats[String(p.id)] || (p.category ? [p.category] : []);
+                return {
+                    ...p,
+                    category: cats[0] || p.category || '',
+                    categories: cats,
+                    gallery: Array.isArray(p.gallery) && p.gallery.length > 0 ? p.gallery : [p.image].filter(Boolean),
+                    reviews: p.reviews || [],
+                    rating: p.rating || 0,
+                    fullDescription: p.fullDescription || p.description || ''
+                };
+            });
         } catch (error) {
             console.error('Error loading products desde Supabase:', error);
             document.getElementById('productsGrid').innerHTML = '<p>Error al cargar productos.</p>';
@@ -64,7 +95,7 @@ const ProductManager = {
         // Update card basic info
         heroTitle.textContent = featured.name;
         heroMeta.textContent = featured.description || '';
-        if (heroCategory) heroCategory.textContent = featured.category || 'Premium';
+        if (heroCategory) heroCategory.textContent = this.catName(featured.category) || 'Premium';
 
         // Price with offer support
         let priceHtml = '';
@@ -150,7 +181,12 @@ const ProductManager = {
         } else if (category === 'ofertas') {
             filtered = this.products.filter(p => p.isOffer);
         } else {
-            filtered = this.products.filter(p => p.category === category);
+            filtered = this.products.filter(p => {
+                const cats = Array.isArray(p.categories) && p.categories.length > 0
+                    ? p.categories
+                    : (p.category ? [p.category] : []);
+                return cats.includes(category);
+            });
         }
 
         if (filtered.length === 0) {
@@ -184,18 +220,24 @@ const ProductManager = {
             } else if (product.isNew) {
                 badgeHtml = `<div class="prod-badge badge-new">Nuevo</div>`;
             } else {
-                badgeHtml = `<div class="prod-badge badge-top">${product.category}</div>`;
+                badgeHtml = `<div class="prod-badge badge-top">${this.catName(product.category)}</div>`;
             }
 
             // Background gradient based on category
             let bgGradient = 'radial-gradient(ellipse at 50% 20%, rgba(45,107,71,0.2), #0a0a0a)';
-            if (product.category && product.category.toLowerCase().includes('bateria')) {
+            const allCatStr = (Array.isArray(product.categories) && product.categories.length > 0
+                ? product.categories : [product.category || '']).join(' ').toLowerCase();
+            if (allCatStr.includes('bateria')) {
                 bgGradient = 'radial-gradient(ellipse at 50% 20%, rgba(100,80,180,0.2), #0a0a0a)';
-            } else if (product.category && product.category.toLowerCase().includes('importado')) {
+            } else if (allCatStr.includes('importado')) {
                 bgGradient = 'radial-gradient(ellipse at 50% 20%, rgba(60,60,80,0.3), #0a0a0a)';
             } else if (product.isOffer) {
                 bgGradient = 'radial-gradient(ellipse at 50% 20%, rgba(201,169,110,0.2), #0a0a0a)';
             }
+
+            const displayCat = Array.isArray(product.categories) && product.categories.length > 0
+                ? this.catNames(product.categories)
+                : this.catName(product.category || '');
             
             card.innerHTML = `
                 <div class="prod-image">
@@ -205,7 +247,7 @@ const ProductManager = {
                     <img class="prod-emoji" src="${product.image}" alt="${product.name}" loading="lazy" onerror="this.src='favicon.svg'">
                 </div>
                 <div class="prod-info">
-                    <p class="prod-category">${product.category}</p>
+                    <p class="prod-category">${displayCat}</p>
                     <h3 class="prod-name">${product.name}</h3>
                     <p class="prod-origin">${product.description}</p>
                     <div class="prod-bottom">
@@ -254,7 +296,9 @@ function openProductModal(productId) {
     const overlay = document.getElementById('productModalOverlay');
     
     // Populate modal content
-    document.getElementById('modalCategory').textContent = product.category;
+    const catSlugs = Array.isArray(product.categories) && product.categories.length > 0
+        ? product.categories : (product.category ? [product.category] : []);
+    document.getElementById('modalCategory').textContent = ProductManager.catNames(catSlugs) || product.category;
     document.getElementById('modalTitle').textContent = product.name;
     
     // Rating
