@@ -15,7 +15,14 @@ const Cart = {
         if (existingItem) {
             existingItem.quantity++;
         } else {
-            this.items.push({ ...product, quantity: 1 });
+            // Only store what the cart UI needs — keeps localStorage lean
+            this.items.push({
+                id: String(product.id),
+                name: product.name,
+                price: product.price,
+                image: product.image || '',
+                quantity: 1
+            });
         }
         this.save();
         this.render();
@@ -61,8 +68,8 @@ const Cart = {
         if (!cartItemsContainer) return; // Might be on a page without cart sidebar
 
         if (this.items.length === 0) {
-            cartItemsContainer.innerHTML = '<div style="text-align: center; margin-top: 2rem; color: #64748b;">Tu carrito está vacío</div>';
-            cartTotalElement.innerText = '$0.00';
+            cartItemsContainer.innerHTML = '<div style="text-align: center; margin-top: 2rem; color: var(--white-dim, rgba(245,245,240,0.3));">Tu carrito está vacío</div>';
+            cartTotalElement.innerText = '$0';
             return;
         }
 
@@ -72,15 +79,17 @@ const Cart = {
             total += subtotal;
             return `
                 <div class="cart-item">
-                    <img src="${item.image}" alt="${item.name}" class="cart-item-img">
-                    <div class="cart-item-details">
-                        <div class="cart-item-title">${item.name}</div>
-                        <div class="cart-item-price">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(item.price)} x ${item.quantity}</div>
-                        <div class="cart-item-controls">
+                    <div class="cart-item-image">
+                        <img src="${item.image}" alt="${item.name}">
+                    </div>
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(item.price)}</div>
+                        <div class="cart-item-qty">
                             <button class="qty-btn" onclick="Cart.updateQuantity('${item.id}', -1)">-</button>
                             <span>${item.quantity}</span>
                             <button class="qty-btn" onclick="Cart.updateQuantity('${item.id}', 1)">+</button>
-                            <button class="action-btn btn-delete" style="margin-left: auto; padding: 2px 6px;" onclick="Cart.remove('${item.id}')"><i class="fas fa-trash"></i></button>
+                            <button class="cart-item-remove" onclick="Cart.remove('${item.id}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                 </div>
@@ -91,13 +100,13 @@ const Cart = {
     },
 
     open() {
-        document.getElementById('cartSidebar').classList.add('open');
-        document.getElementById('cartOverlay').classList.add('open');
+        document.getElementById('cartSidebar').classList.add('active');
+        document.getElementById('cartOverlay').classList.add('active');
     },
 
     close() {
-        document.getElementById('cartSidebar').classList.remove('open');
-        document.getElementById('cartOverlay').classList.remove('open');
+        document.getElementById('cartSidebar').classList.remove('active');
+        document.getElementById('cartOverlay').classList.remove('active');
     },
 
     // Open confirmation modal
@@ -134,14 +143,14 @@ const Cart = {
 
         // Close cart and open order modal
         this.close();
-        document.getElementById('orderModal').classList.add('open');
-        document.getElementById('orderModalOverlay').classList.add('open');
+        document.getElementById('orderModal').classList.add('active');
+        document.getElementById('orderModalOverlay').classList.add('active');
         document.body.style.overflow = 'hidden';
     },
 
     closeOrderModal() {
-        document.getElementById('orderModal').classList.remove('open');
-        document.getElementById('orderModalOverlay').classList.remove('open');
+        document.getElementById('orderModal').classList.remove('active');
+        document.getElementById('orderModalOverlay').classList.remove('active');
         document.body.style.overflow = '';
     },
 
@@ -151,32 +160,60 @@ const Cart = {
     },
 
     async checkout() {
-        // Validate form
+        // Get all form inputs
         const nameInput = document.getElementById('customerName');
         const phoneInput = document.getElementById('customerPhone');
-        const customerName = nameInput.value.trim();
-        const customerPhone = phoneInput.value.trim();
+        const cityInput = document.getElementById('customerCity');
+        const addressInput = document.getElementById('customerAddress');
+        const neighborhoodInput = document.getElementById('customerNeighborhood');
+        const apartmentInput = document.getElementById('customerApartment');
+        const landmarkInput = document.getElementById('customerLandmark');
+        const notesInput = document.getElementById('customerNotes');
 
+        // Get values
+        const customerName = nameInput?.value?.trim() || '';
+        const customerPhone = phoneInput?.value?.trim() || '';
+        const customerCity = cityInput?.value?.trim() || '';
+        const customerAddress = addressInput?.value?.trim() || '';
+        const customerNeighborhood = neighborhoodInput?.value?.trim() || '';
+        const customerApartment = apartmentInput?.value?.trim() || '';
+        const customerLandmark = landmarkInput?.value?.trim() || '';
+        const customerNotes = notesInput?.value?.trim() || '';
+
+        // Validate required fields
         let hasError = false;
 
         if (!customerName) {
-            nameInput.classList.add('error');
+            nameInput?.classList.add('error');
             hasError = true;
         } else {
-            nameInput.classList.remove('error');
+            nameInput?.classList.remove('error');
         }
 
-        // Validación básica para números colombianos (10 dígitos, con o sin espacios)
         const phoneDigits = customerPhone.replace(/\D/g, '');
         if (!customerPhone || phoneDigits.length < 10) {
-            phoneInput.classList.add('error');
+            phoneInput?.classList.add('error');
             hasError = true;
         } else {
-            phoneInput.classList.remove('error');
+            phoneInput?.classList.remove('error');
+        }
+
+        if (!customerCity) {
+            cityInput?.classList.add('error');
+            hasError = true;
+        } else {
+            cityInput?.classList.remove('error');
+        }
+
+        if (!customerAddress) {
+            addressInput?.classList.add('error');
+            hasError = true;
+        } else {
+            addressInput?.classList.remove('error');
         }
 
         if (hasError) {
-            alert('Por favor completa todos los campos requeridos');
+            alert('Por favor completa todos los campos obligatorios marcados con (*)');
             return;
         }
 
@@ -185,12 +222,25 @@ const Cart = {
             return;
         }
 
+        // Build full address
+        let fullAddress = customerAddress;
+        if (customerApartment) fullAddress += `, ${customerApartment}`;
+        if (customerNeighborhood) fullAddress += ` - ${customerNeighborhood}`;
+        fullAddress += `, ${customerCity}`;
+
         // Build WhatsApp message
-        let message = `*NUEVO PEDIDO*\n\n`;
-        message += `*Datos del Cliente:*\n`;
-        message += `Hola, soy *${customerName}*\n`;
-        message += `Mi número telefónico: *${customerPhone}*\n\n`;
-        message += `*Productos:*\n`;
+        let message = `📦 *NUEVO PEDIDO*\n\n`;
+        message += `👤 *Datos del Cliente:*\n`;
+        message += `• Nombre: *${customerName}*\n`;
+        message += `• Teléfono: *${customerPhone}*\n\n`;
+        
+        message += `📍 *Dirección de Entrega:*\n`;
+        message += `• ${fullAddress}\n`;
+        if (customerLandmark) message += `• Referencia: ${customerLandmark}\n`;
+        if (customerNotes) message += `• Notas: ${customerNotes}\n`;
+        message += `\n`;
+
+        message += `🛒 *Productos:*\n`;
 
         let total = 0;
         this.items.forEach(item => {
@@ -199,8 +249,8 @@ const Cart = {
             message += `- ${item.name} (x${item.quantity}): ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(subtotal)}\n`;
         });
 
-        message += `\n*Total a pagar: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(total)}*`;
- 
+        message += `\n💰 *Total a pagar: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(total)}*`;
+        message += `\n\n✨ _¡Gracias por tu pedido!_`;
 
         // 1. Save Order to LocalStorage for Admin
         const newOrder = {
@@ -211,7 +261,16 @@ const Cart = {
             items: JSON.parse(JSON.stringify(this.items)),
             total: total,
             customer: customerName,
-            phone: customerPhone
+            phone: customerPhone,
+            address: {
+                city: customerCity,
+                street: customerAddress,
+                neighborhood: customerNeighborhood,
+                apartment: customerApartment,
+                landmark: customerLandmark,
+                notes: customerNotes,
+                full: fullAddress
+            }
         };
 
         let existingOrders;
@@ -240,8 +299,8 @@ const Cart = {
         }
 
         // 3. Abrir WhatsApp con manejo de bloqueo de popups
+        const phoneNumber = "573219395309";
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-        const phoneNumber = "573219395309"; 
         const win = window.open(url, '_blank');
 
         if (!win || win.closed || typeof win.closed === 'undefined') {

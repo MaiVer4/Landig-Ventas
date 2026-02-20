@@ -10,6 +10,36 @@
 
   const client = supabase.createClient(config.url, config.anonKey);
 
+  // Helper: try to resolve storage paths to public URLs when possible
+  function resolveImagePath(value) {
+    if (!value) return value;
+    // If already a full URL or data URI, return as-is
+    if (/^(https?:)?\/\//i.test(value) || value.startsWith('data:')) return value;
+
+    // Normalize path (remove leading slashes)
+    const path = value.replace(/^\/+/, '');
+
+    // Candidate buckets to try (common names). Supabase public URL format:
+    // {SUPABASE_URL}/storage/v1/object/public/{bucket}/{path}
+    const buckets = ['public', 'products', 'images', 'product-images', 'prod'];
+    const base = config.url.replace(/\/$/, '');
+
+    for (const b of buckets) {
+      try {
+        const candidate = `${base}/storage/v1/object/public/${b}/${encodeURIComponent(path)}`;
+        // We can't do a network HEAD here reliably, so return the first candidate.
+        // This covers common bucket naming; if it's wrong the browser will 404
+        // and the user can update the bucket name in the DB or provide full URLs.
+        return candidate;
+      } catch (e) {
+        // ignore encoding errors and try next
+      }
+    }
+
+    // Fallback: return the raw path
+    return value;
+  }
+
   async function handleResult(promise) {
     const { data, error } = await promise;
     if (error) throw error;
@@ -38,30 +68,63 @@
     async fetchProducts() {
       const products = await handleResult(client.from('Products').select('*'));
       // Ensure gallery is an array (Supabase JSONB returns it as parsed object already)
-      return products.map(p => ({
-        ...p,
-        gallery: Array.isArray(p.gallery) ? p.gallery : (p.gallery ? [p.gallery] : [p.image])
-      }));
+      return products.map(p => {
+        const rawGallery = Array.isArray(p.gallery) ? p.gallery : (p.gallery ? [p.gallery] : (p.image ? [p.image] : []));
+        const gallery = rawGallery.map(src => resolveImagePath(src)).filter(Boolean);
+        return {
+          ...p,
+          gallery,
+          // normalize image field to first gallery item if available
+          image: (p.image && /^(https?:)?\/\//i.test(p.image)) ? p.image : (gallery[0] || p.image)
+        };
+      });
     },
     async upsertProduct(product) {
+      // 'isFeatured' is a client-side flag stored in localStorage.featuredProductId
+      // It is NOT a column in the Supabase Products table — always strip it to avoid
+      // "column does not exist" errors that silently block all product saves.
+      const { isFeatured, ...productData } = product;
+
       const payload = { 
-        ...product, 
+        ...productData, 
         id: String(product.id || Date.now())
       };
       
       // Only include gallery if it exists and has items
-      if (product.gallery && Array.isArray(product.gallery) && product.gallery.length > 0) {
-        payload.gallery = product.gallery;
+      if (!product.gallery || !Array.isArray(product.gallery) || product.gallery.length === 0) {
+        delete payload.gallery;
       }
       
       try {
         await handleResult(client.from('Products').upsert(payload));
       } catch (error) {
-        // If gallery column doesn't exist, retry without it
-        if (error.code === 'PGRST204' && error.message.includes('gallery')) {
-          console.warn('⚠️ Gallery column not found in database, saving without it');
+        // If an unknown column causes the error, retry stripping gallery first,
+        // then fall back to minimal guaranteed columns.
+        const isColumnError = error.code === 'PGRST204' ||
+          (error.message && (
+            error.message.includes('gallery') ||
+            error.message.includes('column') ||
+            error.message.includes('does not exist')
+          ));
+        if (isColumnError) {
+          console.warn('⚠️ Column mismatch on upsert, retrying without optional fields:', error.message);
           delete payload.gallery;
-          await handleResult(client.from('Products').upsert(payload));
+          try {
+            await handleResult(client.from('Products').upsert(payload));
+          } catch (retryError) {
+            // Last resort: only send the core guaranteed columns
+            console.warn('⚠️ Retrying with base columns only:', retryError.message);
+            const basePayload = {
+              id: payload.id,
+              name: payload.name,
+              description: payload.description || '',
+              price: payload.price,
+              category: payload.category,
+              stock: payload.stock,
+              image: payload.image || '',
+            };
+            await handleResult(client.from('Products').upsert(basePayload));
+          }
         } else {
           throw error;
         }

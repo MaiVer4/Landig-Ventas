@@ -28,6 +28,109 @@ const ProductManager = {
         }
 
         this.renderProducts('all');
+        // Render featured product in hero (if any)
+        this.renderFeatured();
+    },
+
+    renderFeatured() {
+        const heroImage = document.getElementById('heroCardImage');
+        const heroTitle = document.getElementById('heroCardTitle');
+        const heroPrice = document.getElementById('heroCardPrice');
+        const heroMeta = document.getElementById('heroCardMeta');
+        const heroCategory = document.getElementById('heroCardCategory');
+        const heroViewBtn = document.getElementById('heroViewBtn');
+        const heroBuyBtn = document.getElementById('heroBuyBtn');
+
+        if (!heroTitle || !heroImage) return;
+
+        // Prefer persisted featuredProductId (saved by admin) → isFeatured flag → first product
+        const _fid = localStorage.getItem('featuredProductId');
+        let featured = _fid ? this.products.find(p => String(p.id) === String(_fid)) : null;
+        if (!featured) featured = this.products.find(p => p.isFeatured) || this.products[0];
+        if (!featured) {
+            heroTitle.textContent = 'Próximamente';
+            heroPrice.textContent = '';
+            heroMeta.textContent = 'No hay productos disponibles.';
+            if (heroViewBtn) heroViewBtn.style.display = 'none';
+            if (heroBuyBtn) heroBuyBtn.style.display = 'none';
+            return;
+        }
+
+        // Update card basic info
+        heroTitle.textContent = featured.name;
+        heroMeta.textContent = featured.description || '';
+        if (heroCategory) heroCategory.textContent = featured.category || 'Premium';
+
+        // Price with offer support
+        let priceHtml = '';
+        let finalPrice = featured.price;
+        if (featured.isOffer && featured.discountPercent > 0) {
+            finalPrice = featured.price * (1 - featured.discountPercent / 100);
+            priceHtml = `<span class="original">${formatPrice(featured.price)}</span>${formatPrice(finalPrice)}`;
+        } else {
+            priceHtml = formatPrice(featured.price);
+        }
+        heroPrice.innerHTML = priceHtml;
+
+        // Setup carousel
+        const gallery = Array.isArray(featured.gallery) && featured.gallery.length > 0 ? featured.gallery : (featured.image ? [featured.image] : []);
+        const imgEl = document.getElementById('heroImageEl');
+        const prevBtn = document.getElementById('heroPrev');
+        const nextBtn = document.getElementById('heroNext');
+        const indicators = document.getElementById('heroIndicators');
+
+        // Clear previous listeners/interval if any
+        if (!this.featuredState) this.featuredState = {};
+        if (this.featuredState.interval) { clearInterval(this.featuredState.interval); this.featuredState.interval = null; }
+        if (this.featuredState.prevHandler) { try { prevBtn.removeEventListener('click', this.featuredState.prevHandler); } catch(e){} }
+        if (this.featuredState.nextHandler) { try { nextBtn.removeEventListener('click', this.featuredState.nextHandler); } catch(e){} }
+
+        let current = 0;
+        function show(i) {
+            current = (i + gallery.length) % gallery.length;
+            if (imgEl) imgEl.src = gallery[current] || '';
+            // update indicators
+            if (indicators) {
+                indicators.innerHTML = '';
+                gallery.forEach((g, idx) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'dot' + (idx === current ? ' active' : '');
+                    dot.addEventListener('click', () => show(idx));
+                    indicators.appendChild(dot);
+                });
+            }
+        }
+
+        if (gallery.length === 0) {
+            if (imgEl) imgEl.src = '';
+        } else if (gallery.length === 1) {
+            show(0);
+        } else {
+            show(0);
+            const prevHandler = () => show(current - 1);
+            const nextHandler = () => show(current + 1);
+            prevBtn.addEventListener('click', prevHandler);
+            nextBtn.addEventListener('click', nextHandler);
+            // autoplay every 5s
+            this.featuredState.prevHandler = prevHandler;
+            this.featuredState.nextHandler = nextHandler;
+            this.featuredState.interval = setInterval(() => show(current + 1), 5000);
+        }
+
+        if (heroViewBtn) {
+            heroViewBtn.style.display = '';
+            heroViewBtn.onclick = () => openProductModal(featured.id);
+        }
+        if (heroBuyBtn) {
+            heroBuyBtn.style.display = '';
+            heroBuyBtn.onclick = () => {
+                addToCart(featured.id);
+                heroBuyBtn.innerHTML = '<span><i class="fas fa-check"></i></span>';
+                setTimeout(() => {
+                    heroBuyBtn.innerHTML = '<span><i class="fas fa-cart-plus"></i></span>';
+                }, 1500);
+            };
+        }
     },
 
     renderProducts(category) {
@@ -46,59 +149,65 @@ const ProductManager = {
         }
 
         if (filtered.length === 0) {
-            container.innerHTML = '<p class="text-center" style="grid-column: 1/-1;">No se encontraron productos en esta categoría.</p>';
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--white-muted);">No se encontraron productos en esta categoría.</p>';
             return;
         }
 
         filtered.forEach(product => {
             const card = document.createElement('div');
-            card.className = 'product-card';
+            card.className = 'prod-card';
             card.setAttribute('data-product-id', product.id);
             
-            // Offer Calc
-            let priceHtml = '';
+            // Calculate final price
             let finalPrice = product.price;
+            let priceHtml = '';
 
             if (product.isOffer && product.discountPercent > 0) {
                 finalPrice = product.price * (1 - product.discountPercent / 100);
                 priceHtml = `
-                    <div style="display:flex; flex-direction:column; align-items: flex-start;">
-                        <span class="old-price">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(product.price)}</span>
-                        <span class="product-price" style="color: var(--danger-color); font-weight: 800;">
-                            ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(finalPrice)}
-                        </span>
-                    </div>
+                    <span class="original-price">${formatPrice(product.price)}</span>
+                    ${formatPrice(finalPrice)}
                 `;
             } else {
-                priceHtml = `<span class="product-price">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(product.price)}</span>`;
+                priceHtml = formatPrice(product.price);
             }
 
-            // Offer badge logic
-            const offerBadge = product.isOffer ? `<div class="offer-sticker">-${product.discountPercent || 0}%</div>` : '';
-            
-            // Rating stars
-            const ratingStars = product.rating ? `
-                <div class="product-card-rating">
-                    <span class="stars">${getStarsHtml(product.rating)}</span>
-                    <span class="rating-text">${product.rating}</span>
-                </div>
-            ` : '';
+            // Badge logic
+            let badgeHtml = '';
+            if (product.isOffer && product.discountPercent > 0) {
+                badgeHtml = `<div class="prod-badge badge-limited">-${product.discountPercent}%</div>`;
+            } else if (product.isNew) {
+                badgeHtml = `<div class="prod-badge badge-new">Nuevo</div>`;
+            } else {
+                badgeHtml = `<div class="prod-badge badge-top">${product.category}</div>`;
+            }
+
+            // Background gradient based on category
+            let bgGradient = 'radial-gradient(ellipse at 50% 20%, rgba(45,107,71,0.2), #0a0a0a)';
+            if (product.category && product.category.toLowerCase().includes('bateria')) {
+                bgGradient = 'radial-gradient(ellipse at 50% 20%, rgba(100,80,180,0.2), #0a0a0a)';
+            } else if (product.category && product.category.toLowerCase().includes('importado')) {
+                bgGradient = 'radial-gradient(ellipse at 50% 20%, rgba(60,60,80,0.3), #0a0a0a)';
+            } else if (product.isOffer) {
+                bgGradient = 'radial-gradient(ellipse at 50% 20%, rgba(201,169,110,0.2), #0a0a0a)';
+            }
             
             card.innerHTML = `
-                <div class="product-image-container relative">
-                    ${offerBadge}
-                    <span class="product-category-badge">${product.category}</span>
-                    <img src="${product.image}" alt="${product.name}" class="product-image">
+                <div class="prod-image">
+                    <div class="prod-img-bg" style="background: ${bgGradient}"></div>
+                    <div class="prod-spotlight"></div>
+                    ${badgeHtml}
+                    <img class="prod-emoji" src="${product.image}" alt="${product.name}" loading="lazy" onerror="this.src='favicon.svg'">
                 </div>
-                <div class="product-info">
-                    <h3 class="product-title">${product.name}</h3>
-                    ${ratingStars}
-                    <p class="product-desc">${product.description}</p>
-                    <div class="product-footer">
-                        ${priceHtml}
+                <div class="prod-info">
+                    <p class="prod-category">${product.category}</p>
+                    <h3 class="prod-name">${product.name}</h3>
+                    <p class="prod-origin">${product.description}</p>
+                    <div class="prod-bottom">
+                        <div class="prod-price">${priceHtml}</div>
                         ${product.stock > 0 
-                            ? `<button class="btn-add" onclick="event.stopPropagation(); addToCart('${product.id}')" title="Añadir al carrito"><i class="fas fa-plus"></i></button>`
-                            : `<button class="btn-secondary" style="font-size:0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px;" disabled>Agotado</button>`
+                            ? `<button class="add-to-cart" onclick="event.stopPropagation(); addToCart('${product.id}')" title="Añadir al carrito"><i class="fas fa-plus"></i></button>`
+                            : `<button class="add-to-cart" style="opacity: 0.4; cursor: not-allowed;" disabled><i class="fas fa-times"></i></button>`
                         }
                     </div>
                 </div>
@@ -198,8 +307,9 @@ function openProductModal(productId) {
         ? product.gallery 
         : [product.image];
     const mainImg = document.getElementById('galleryMainImg');
-    mainImg.src = gallery[0];
+    mainImg.src = gallery[0] || '';
     mainImg.alt = product.name;
+    mainImg.onerror = () => { mainImg.src = 'favicon.svg'; };
     
     const thumbsContainer = document.getElementById('galleryThumbs');
     thumbsContainer.innerHTML = '';
@@ -237,8 +347,8 @@ function openProductModal(productId) {
     }
     
     // Open modal
-    modal.classList.add('open');
-    overlay.classList.add('open');
+    modal.classList.add('active');
+    overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
@@ -246,8 +356,8 @@ function closeProductModal() {
     const modal = document.getElementById('productModal');
     const overlay = document.getElementById('productModalOverlay');
     
-    modal.classList.remove('open');
-    overlay.classList.remove('open');
+    modal.classList.remove('active');
+    overlay.classList.remove('active');
     document.body.style.overflow = '';
 }
 
@@ -296,12 +406,26 @@ window.addToCart = (id) => {
             price: effectivePrice
         });
         
-        // Show tiny feedback
-        const btn = event.currentTarget;
-        if (btn) {
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i>';
-            setTimeout(() => btn.innerHTML = originalHtml, 1000);
+        // Show toast notification
+        if (window.showToast) {
+            window.showToast(product.name);
+        }
+        
+        // Visual feedback: pulse the cart badge
+        const badge = document.getElementById('cartCount');
+        if (badge) {
+            badge.classList.add('bump');
+            setTimeout(() => { badge.classList.remove('bump'); }, 300);
+        }
+        
+        // Visual feedback on the add-to-cart button
+        const card = document.querySelector(`[data-product-id="${id}"]`);
+        if (card) {
+            const btn = card.querySelector('.add-to-cart');
+            if (btn) {
+                btn.classList.add('added');
+                setTimeout(() => btn.classList.remove('added'), 600);
+            }
         }
     }
 };
@@ -336,13 +460,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Default Fallback matching Admin defaults if LS empty
     if (storedCategories) {
-        categoriesList = JSON.parse(storedCategories);
-    } else {
+        try { categoriesList = JSON.parse(storedCategories); } catch (e) { /* datos corruptos — usar defaults */ }
+    }
+    if (!categoriesList.length) {
         categoriesList = [
-            { name: 'Tecnología', slug: 'tecnologia', visible: true },
-            { name: 'Moda', slug: 'moda', visible: true },
-            { name: 'Hogar', slug: 'hogar', visible: true },
-            { name: 'Deportes', slug: 'deportes', visible: true },
+            { name: 'Destilados THC', slug: 'destilados-thc', visible: true },
+            { name: 'Baterías para Destilados', slug: 'baterias-para-destilados', visible: true },
+            { name: 'Destilados Importados', slug: 'destilados-importados', visible: true },
+            { name: 'Destilados Nacionales', slug: 'destilados-nacionales', visible: true },
             { name: 'Ofertas', slug: 'ofertas', visible: true }
         ];
     }
@@ -387,5 +512,126 @@ document.addEventListener('DOMContentLoaded', () => {
                 ProductManager.renderProducts(category);
             });
         });
+    }
+});
+
+// ========================================
+// SCROLL EFFECTS
+// ========================================
+
+// Header scroll effect
+const header = document.querySelector('header');
+let lastScrollY = 0;
+
+function handleHeaderScroll() {
+    const currentScrollY = window.scrollY;
+    
+    if (currentScrollY > 50) {
+        header.classList.add('header-scrolled');
+    } else {
+        header.classList.remove('header-scrolled');
+    }
+    
+    // Hide/show header on scroll direction (optional smooth UX)
+    if (currentScrollY > lastScrollY && currentScrollY > 200) {
+        header.classList.add('header-hidden');
+    } else {
+        header.classList.remove('header-hidden');
+    }
+    
+    lastScrollY = currentScrollY;
+}
+
+window.addEventListener('scroll', handleHeaderScroll, { passive: true });
+
+// Scroll Reveal Animation with Intersection Observer
+const observerOptions = {
+    root: null,
+    rootMargin: '0px 0px -80px 0px',
+    threshold: 0.1
+};
+
+const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            // Optional: unobserve after reveal for performance
+            // revealObserver.unobserve(entry.target);
+        }
+    });
+}, observerOptions);
+
+// Elements to animate on scroll
+const revealElements = document.querySelectorAll(`
+    .hero-content,
+    .hero-visual,
+    .trust-item,
+    .category-card,
+    .product-card,
+    .testimonial-card,
+    .section-header,
+    .cta-content,
+    .footer-col,
+    .stat-item,
+    .hero-stats
+`);
+
+revealElements.forEach((el, index) => {
+    el.classList.add('reveal-element');
+    el.style.transitionDelay = `${index % 4 * 0.1}s`;
+    revealObserver.observe(el);
+});
+
+// Parallax effect for hero background
+const heroSection = document.querySelector('.hero');
+if (heroSection) {
+    window.addEventListener('scroll', () => {
+        const scrolled = window.scrollY;
+        if (scrolled < window.innerHeight) {
+            heroSection.style.setProperty('--parallax-offset', `${scrolled * 0.3}px`);
+        }
+    }, { passive: true });
+}
+
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+        const targetId = this.getAttribute('href');
+        if (targetId === '#') return;
+        
+        const targetEl = document.querySelector(targetId);
+        if (targetEl) {
+            e.preventDefault();
+            const headerHeight = header ? header.offsetHeight : 0;
+            const targetPosition = targetEl.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
+            
+            window.scrollTo({
+                top: targetPosition,
+                behavior: 'smooth'
+            });
+        }
+    });
+});
+
+// Cross-tab sync: update products and featured when another tab (admin) updates localStorage
+window.addEventListener('storage', (e) => {
+    if (e.key === 'products') {
+        try {
+            const newProducts = e.newValue ? JSON.parse(e.newValue) : [];
+            if (Array.isArray(newProducts)) {
+                ProductManager.products = newProducts.map(p => ({
+                    ...p,
+                    gallery: Array.isArray(p.gallery) ? p.gallery : (p.gallery ? [p.gallery] : (p.image ? [p.image] : [])),
+                    image: (p.image && /^(https?:)?\/\//i.test(p.image)) ? p.image : ((Array.isArray(p.gallery) && p.gallery[0]) || p.image)
+                }));
+            } else {
+                ProductManager.products = [];
+            }
+            // Refresh UI
+            ProductManager.renderProducts('all');
+            if (typeof ProductManager.renderFeatured === 'function') ProductManager.renderFeatured();
+        } catch (err) {
+            console.error('Error parsing products from storage event', err);
+        }
     }
 });
