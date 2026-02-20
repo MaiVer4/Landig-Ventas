@@ -2177,149 +2177,242 @@ footer {
 
 /* ─── RESPONSIVE ──────────────────────────────────── */
 @media (max-width: 1400px) {
-    .story-text { padding: 100px 48px 100px 48px; }
+    .story-text { padding: 100px 48px; }
     .story-stat { gap: 36px; }
     .stat-num { font-size: 44px; }
 }
+
 @media (max-width: 1200px) {
     .products-grid { grid-template-columns: repeat(3, 1fr); }
     #story { min-height: 500px; }
     .story-circle { width: 240px; height: 240px; }
     .story-circle::before { width: 180px; height: 180px; }
     .story-circle-inner { width: 110px; height: 110px; font-size: 44px; }
+    .footer-top { gap: 40px; }
 }
+
 @media (max-width: 1024px) {
+    nav { padding: 20px 36px; }
+    nav.scrolled { padding: 14px 36px; }
+    .nav-links { gap: 24px; }
+    .nav-links a { font-size: 11px; }
+
+    .hero-container { grid-template-columns: 1fr; gap: 40px; padding: 0 36px; }
+    .hero-featured { max-width: 440px; margin: 0 auto; }
+
     .products-grid { grid-template-columns: repeat(2, 1fr); }
     .categories-grid { grid-template-columns: 1fr 1fr; }
     .footer-top { grid-template-columns: 1fr 1fr; gap: 40px; }
-    .hero-container { grid-template-columns: 1fr; gap: 40px; }
-    .hero-featured { max-width: 400px; margin: 0 auto; }
+
     .product-modal-content { grid-template-columns: 1fr; }
     .product-modal-gallery { padding: 24px; }
+
     #story { grid-template-columns: 1fr; min-height: auto; }
     .story-visual { display: none; }
-    .story-text { padding: 80px 48px; text-align: left; }
+    .story-text { padding: 80px 48px; }
     .story-big-text { font-size: clamp(28px, 5vw, 48px); }
     .story-stat { justify-content: flex-start; }
 }
+
+/* ── Tablet solo (768–1024px) ── */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .hero-container { padding-top: 80px; }
+    .hero-featured-image { aspect-ratio: 3/2; }
+    .hero-featured-info { padding: 20px; }
+    .hero-featured-name { font-size: 20px; }
+    .hero-featured-price { font-size: 24px; }
+
+    .categories-title { font-size: 42px; }
+    .cat-name { font-size: 24px; }
+
+    .products-title { font-size: 36px; }
+
+    #benefits { padding: 80px 36px; }
+    .benefits-grid { gap: 1px; }
+    .benefit-item { padding: 32px 24px; }
+
+    footer { padding: 80px 36px 40px; }
+    .footer-top { gap: 32px; }
+}
+
 @media (max-width: 768px) {
-    /* Cursor oculto en móviles */
+    /* ── Cursor ── */
     .cursor, .cursor-ring { display: none; }
     body { cursor: auto; }
-    
-    nav { padding: 20px 24px; }
-    nav.scrolled { padding: 14px 24px; }
+
+    /* ── Navbar ── */
+    nav { padding: 18px 20px; }
+    nav.scrolled { padding: 12px 20px; }
     .nav-links { display: none; }
     .nav-age { display: none; }
     .hamburger { display: flex; }
-    
-    #hero { min-height: 100vh; min-height: 100dvh; }
-    .hero-container { padding: 0 24px; }
-    .hero-title { font-size: 48px; }
-    .hero-subtitle { font-size: 14px; max-width: 100%; }
-    .hero-eyebrow { font-size: 10px; }
-    .hero-featured-card { margin-top: 20px; }
+
+    /* ── Hero ── */
+    #hero { min-height: 100svh; align-items: flex-start; }
+    .hero-container {
+        padding: 100px 20px 40px;
+        gap: 32px;
+        align-items: center;
+        justify-items: center;
+        text-align: center;
+    }
+    .hero-content { display: flex; flex-direction: column; align-items: center; }
+    .hero-eyebrow { font-size: 10px; justify-content: center; }
+    .hero-title { font-size: clamp(40px, 11vw, 64px); }
+    .hero-subtitle { font-size: 14px; max-width: 100%; text-align: center; }
+    .hero-ctas { flex-direction: column; align-items: stretch; width: 100%; max-width: 320px; }
+    .hero-featured { max-width: 340px; width: 100%; }
     .hero-featured-image { aspect-ratio: 4/3; }
+    .hero-featured-card { margin-top: 0; }
     .scroll-indicator { display: none; }
-    
-    #categories { padding: 80px 24px; }
-    .categories-grid { grid-template-columns: 1fr; }
-    .cat-card { aspect-ratio: 4/3 !important; }
-    .cat-name { font-size: 24px; }
+
+    /* ── Categories ── */
+    #categories { padding: 72px 20px; }
     .categories-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-    .categories-title { font-size: 32px; }
-    
-    #products { padding: 80px 24px; }
-    .products-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .categories-title { font-size: 30px; }
+    .categories-grid { grid-template-columns: 1fr; }
+    .cat-card { aspect-ratio: 16/9 !important; }
+    .cat-name { font-size: 24px; }
+    .cat-content { padding: 24px 20px; }
+
+    /* ── Products ── */
+    #products { padding: 72px 20px; }
+    .products-header { flex-direction: column; align-items: flex-start; gap: 14px; }
     .products-title { font-size: 28px; }
-    .products-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-    .products-filter { gap: 6px; }
-    .filter-btn { padding: 6px 12px; font-size: 10px; }
-    
+    .products-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Filter as horizontal scroll strip */
+    .products-filter {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+        gap: 6px;
+    }
+    .products-filter::-webkit-scrollbar { display: none; }
+    .filter-btn { flex-shrink: 0; white-space: nowrap; padding: 7px 14px; font-size: 10px; }
+
+    /* ── Story ── */
     #story { padding: 0; }
-    .story-text { padding: 60px 24px; }
+    .story-text { padding: 60px 20px; }
     .story-quote-mark { font-size: 80px; }
     .story-big-text { font-size: 28px; line-height: 1.15; }
     .story-body { font-size: 14px; margin-bottom: 36px; }
     .story-stat { gap: 24px; flex-wrap: wrap; }
     .stat-num { font-size: 36px; }
     .stat-label { font-size: 9px; }
-    
+
+    /* ── Benefits ── */
+    #benefits { padding: 60px 20px; }
     .benefits-grid { grid-template-columns: 1fr 1fr; }
-    .benefit-item { border-right: none; border-bottom: 1px solid var(--border); padding: 28px 20px; }
+    .benefit-item { border-right: none; border-bottom: 1px solid var(--border); padding: 28px 18px; }
     .benefit-icon { width: 36px; height: 36px; font-size: 16px; margin-bottom: 16px; }
-    .benefit-title { font-size: 16px; }
+    .benefit-title { font-size: 15px; }
     .benefit-desc { font-size: 12px; }
-    #benefits { padding: 60px 24px; }
-    
-    footer { padding: 60px 24px 100px; }
-    .footer-top { grid-template-columns: 1fr; gap: 40px; }
-    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 20px; }
-    .footer-logo { font-size: 28px; }
+
+    /* ── Age banner ── */
+    #age-banner { padding: 14px 20px; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .age-text { font-size: 9px; text-align: center; }
+
+    /* ── Footer ── */
+    footer { padding: 60px 20px 108px; }
+    .footer-top { grid-template-columns: 1fr; gap: 36px; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .footer-brand .footer-logo { font-size: 28px; }
     .footer-tagline { font-size: 12px; }
-    
+    .newsletter-input-wrap { flex-direction: column; clip-path: none; border-radius: 2px; }
+    .newsletter-input { border-bottom: 1px solid var(--border-light); }
+    .newsletter-btn { width: 100%; padding: 13px 16px; }
+
+    /* ── Buttons ── */
     .mobile-cta { display: flex; }
-    .hero-ctas { flex-direction: column; }
     .btn-primary, .btn-secondary { width: 100%; text-align: center; justify-content: center; }
-    
-    #age-banner { padding: 14px 24px; flex-wrap: wrap; text-align: center; }
-    .age-text { font-size: 9px; }
-    
+
+    /* ── Modals / Cart ── */
     .form-row { grid-template-columns: 1fr; }
     .order-modal-footer { flex-direction: column; }
     .order-modal-footer .btn-secondary,
-    .order-modal-footer .btn-primary { flex: 1; }
+    .order-modal-footer .btn-primary { flex: unset; width: 100%; }
     .cart-sidebar { max-width: 100%; }
-    .cart-toast { right: 16px; left: 16px; }
-    
+    .cart-toast { right: 16px; left: 16px; max-width: calc(100% - 32px); }
+
+    /* ── Marquee ── */
     .marquee-section { padding: 16px 0; }
     .marquee-item { font-size: 9px; gap: 12px; }
-    
+
+    /* ── Mobile nav ── */
     .mobile-nav-link { font-size: 36px; }
 }
+
+@media (max-width: 540px) {
+    /* Hide featured card on small phones for a cleaner hero */
+    .hero-featured { display: none; }
+    .hero-container { padding: 90px 20px 32px; justify-items: center; }
+    .hero-title { font-size: clamp(44px, 13vw, 68px); }
+    .hero-subtitle { max-width: 90%; }
+}
+
 @media (max-width: 480px) {
-    .products-grid { grid-template-columns: 1fr; }
-    .benefits-grid { grid-template-columns: 1fr; }
-    .benefit-item:last-child { border-bottom: none; }
-    
-    .hero-title { font-size: 40px; }
-    .hero-subtitle { font-size: 13px; }
-    .hero-featured-name { font-size: 18px; }
-    .hero-featured-price { font-size: 22px; }
-    
-    .prod-info { padding: 16px; }
+    /* ── Products ── */
+    .products-grid { grid-template-columns: 1fr; gap: 10px; }
+    .prod-info { padding: 14px; }
     .prod-name { font-size: 15px; }
     .prod-price { font-size: 18px; }
     .prod-category { font-size: 8px; }
     .prod-origin { font-size: 11px; margin-bottom: 12px; }
     .prod-badge { font-size: 8px; padding: 3px 8px; }
     .add-to-cart { width: 36px; height: 36px; font-size: 16px; }
-    
+
+    /* ── Benefits ── */
+    .benefits-grid { grid-template-columns: 1fr; }
+    .benefit-item { border-right: none; border-bottom: 1px solid var(--border); }
+    .benefit-item:last-child { border-bottom: none; }
+
+    /* ── Categories ── */
     .cat-name { font-size: 22px; }
     .cat-tag { font-size: 8px; }
     .cat-desc { font-size: 12px; }
-    .cat-content { padding: 24px 20px; }
-    
+    .cat-content { padding: 20px 18px; }
+
+    /* ── Story ── */
+    .story-text { padding: 52px 20px; }
     .story-big-text { font-size: 24px; }
     .story-body { font-size: 13px; }
     .stat-num { font-size: 32px; }
-    
+
+    /* ── Footer ── */
     .footer-col h4 { font-size: 11px; }
     .footer-col ul li a { font-size: 12px; }
-    .footer-age-warning { font-size: 9px; padding: 8px 12px; }
+    .footer-age-warning { font-size: 9px; padding: 8px 14px; flex-wrap: wrap; justify-content: center; }
     .footer-legal { font-size: 10px; }
-    
-    .product-modal { max-height: 95vh; }
+
+    /* ── Product modal ── */
+    .product-modal { width: 100%; max-height: 100svh; top: auto; bottom: 0; left: 0; right: 0;
+        transform: translateY(100%) scale(1); border-radius: 0; }
+    .product-modal.active { transform: translateY(0) scale(1); }
     .product-modal-title { font-size: 22px; }
-    .product-modal-info { padding: 24px; }
-    .gallery-main { padding: 20px; }
+    .product-modal-info { padding: 20px; }
+    .gallery-main { padding: 16px; }
     .gallery-thumb { width: 48px; height: 48px; }
+
+    /* ── Order modal ── */
+    .order-modal { width: 100%; max-height: 100svh; top: auto; bottom: 0; left: 0; right: 0;
+        transform: translateY(100%) scale(1); }
+    .order-modal.active { transform: translateY(0) scale(1); }
 }
+
 @media (max-width: 360px) {
-    .hero-title { font-size: 34px; }
-    .hero-eyebrow { font-size: 9px; letter-spacing: 0.2em; }
-    .story-stat { flex-direction: column; gap: 16px; }
+    .hero-title { font-size: 38px; }
+    .hero-eyebrow { font-size: 9px; letter-spacing: 0.18em; }
+    .story-stat { flex-direction: column; gap: 14px; }
     .stat-item { flex-direction: row; align-items: center; gap: 12px; }
+    .stat-num { font-size: 28px; }
+    .products-filter { gap: 4px; }
+    .filter-btn { padding: 6px 10px; font-size: 9px; }
+    .footer-top { gap: 28px; }
 }
 </style>
 </head>
