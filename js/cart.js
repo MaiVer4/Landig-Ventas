@@ -55,6 +55,26 @@ const Cart = {
         localStorage.setItem('cart', JSON.stringify(this.items));
     },
 
+    _showToast(message, type = 'info') {
+        const existing = document.getElementById('cartToast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.id = 'cartToast';
+        toast.style.cssText = [
+            'position:fixed', 'bottom:20px', 'left:50%', 'transform:translateX(-50%)',
+            'z-index:99999', 'max-width:90vw', 'padding:12px 18px',
+            'border-radius:10px', 'font-size:13px', 'font-weight:600',
+            'box-shadow:0 4px 20px rgba(0,0,0,0.25)', 'text-align:center',
+            type === 'error'
+                ? 'background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5'
+                : 'background:#f0fdf4;color:#166534;border:1px solid #86efac'
+        ].join(';');
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 7000);
+    },
+
+
     updateBadge() {
         const count = this.items.reduce((sum, item) => sum + item.quantity, 0);
         const badge = document.getElementById('cartCount');
@@ -295,9 +315,9 @@ const Cart = {
                 await window.supabaseHelpers.addOrder(newOrder);
                 console.log('✅ Pedido guardado en Supabase:', newOrder.id);
             } catch (err) {
-                // Log the full error so it's visible in DevTools on any device
                 console.error('❌ Error enviando pedido a Supabase:', err?.message || err, err);
-                // Do NOT block WhatsApp — order already saved in localStorage
+                // Show a visible warning on any device (including mobile)
+                Cart._showToast('⚠️ El pedido se envió por WhatsApp pero no se pudo registrar en el sistema. Código: ' + (err?.message || 'desconocido'), 'error');
             }
         } else {
             console.warn('⚠️ supabaseHelpers no disponible — pedido guardado solo en localStorage');

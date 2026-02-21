@@ -234,7 +234,7 @@
                           <button onclick="clearAllOrders();" class="btn-secondary flex items-center gap-2 px-3 py-2 bg-red-600 text-white border border-red-700 rounded-lg hover:bg-red-700 transition-colors text-sm shadow-sm">
                               <i class="fa-solid fa-trash"></i> Limpiar Todo
                           </button>
-                          <button onclick="Admin.renderOrders()" class="btn-secondary flex items-center gap-2 px-3 py-2 bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-sm shadow-sm">
+                          <button id="reloadOrdersBtn" onclick="Admin.reloadOrders()" class="btn-secondary flex items-center gap-2 px-3 py-2 bg-white text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-sm shadow-sm">
                               <i class="fa-solid fa-arrows-rotate"></i> Actualizar
                           </button>
                     </div>
@@ -629,26 +629,38 @@
             if(tabId === 'dashboard') {
                 document.getElementById('dashboardSection').classList.add('active');
                 if(window.Admin) {
+                    if(window.Admin.stopOrdersPolling) window.Admin.stopOrdersPolling();
                     if(window.Admin.renderDashboardStats) window.Admin.renderDashboardStats();
                     if(window.Admin.updateChart) window.Admin.updateChart(window.Admin.currentTimeframe || 'daily');
                 }
             }
             if(tabId === 'orders') {
                 document.getElementById('ordersSection').classList.add('active');
-                if(window.Admin && window.Admin.renderOrders) window.Admin.renderOrders();
+                if(window.Admin) {
+                    // Always re-fetch from Supabase when switching to orders tab
+                    if(window.Admin.reloadOrders) window.Admin.reloadOrders();
+                    if(window.Admin.startOrdersPolling) window.Admin.startOrdersPolling();
+                }
             }
             if(tabId === 'products') {
                 document.getElementById('productsSection').classList.add('active');
-                if(window.Admin && window.Admin.renderProductsTable) window.Admin.renderProductsTable();
+                if(window.Admin) {
+                    if(window.Admin.stopOrdersPolling) window.Admin.stopOrdersPolling();
+                    if(window.Admin.renderProductsTable) window.Admin.renderProductsTable();
+                }
             }
             if(tabId === 'categories') {
                 document.getElementById('categoriesSection').classList.add('active');
-                if(window.Admin && window.Admin.renderCategories) window.Admin.renderCategories();
+                if(window.Admin) {
+                    if(window.Admin.stopOrdersPolling) window.Admin.stopOrdersPolling();
+                    if(window.Admin.renderCategories) window.Admin.renderCategories();
+                }
             }
             if(tabId === 'intelligence') {
                 document.getElementById('intelligenceSection').classList.add('active');
-                if(window.Admin && window.Admin.renderIntelligence) {
-                    window.Admin.renderIntelligence();
+                if(window.Admin) {
+                    if(window.Admin.stopOrdersPolling) window.Admin.stopOrdersPolling();
+                    if(window.Admin.renderIntelligence) window.Admin.renderIntelligence();
                 }
             }
         }

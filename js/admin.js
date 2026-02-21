@@ -88,6 +88,38 @@ const Admin = {
         }
     },
 
+    // Re-fetch orders from Supabase and re-render — used by the Actualizar button and tab switch
+    async reloadOrders() {
+        const btn = document.getElementById('reloadOrdersBtn');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cargando...'; }
+        try {
+            await this.loadOrders();
+            this.renderOrders();
+            this.renderDashboardStats();
+            if (this.salesChart) this.updateChart(this.currentTimeframe || 'daily');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Actualizar'; }
+        }
+    },
+
+    startOrdersPolling() {
+        this.stopOrdersPolling();
+        this._ordersPoller = setInterval(async () => {
+            const tab = document.getElementById('ordersSection');
+            if (tab && tab.classList.contains('active')) {
+                await this.loadOrders();
+                this.renderOrders();
+            }
+        }, 30000); // every 30 s
+    },
+
+    stopOrdersPolling() {
+        if (this._ordersPoller) {
+            clearInterval(this._ordersPoller);
+            this._ordersPoller = null;
+        }
+    },
+
     async loadProducts() {
         // Try Supabase first
         if (window.supabaseHelpers && window.supabaseHelpers.fetchProducts) {
