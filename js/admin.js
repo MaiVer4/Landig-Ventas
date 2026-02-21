@@ -146,9 +146,9 @@ const Admin = {
     },
 
     async syncOrderRemote(order) {
-        if (window.supabaseHelpers && window.supabaseHelpers.upsertOrder) {
+        if (window.supabaseHelpers && window.supabaseHelpers.addOrder) {
             try {
-                await window.supabaseHelpers.upsertOrder(order);
+                await window.supabaseHelpers.addOrder(order);
             } catch (e) {
                 console.error('❌ No se pudo sincronizar el pedido en Supabase', e);
             }
@@ -598,11 +598,6 @@ const Admin = {
         }
     },
 
-    addCategory(e) {
-        // Legacy alias kept for safety
-        this.saveCategory(e);
-    },
-
     async deleteCategory(id) {
         if (!confirm('¿Eliminar categoría? Los productos asociados podrían quedar sin categoría.')) return;
         this.categories = this.categories.filter(c => String(c.id) !== String(id));
@@ -638,26 +633,6 @@ const Admin = {
                     }
                 } catch (e) {
                     console.error('Error sincronizando pedidos', e);
-                }
-            }
-            
-            // Sync products and featured state from other tabs
-            if (event.key === 'products' || event.key === 'featuredProductId') {
-                try {
-                    const storedProducts = localStorage.getItem('products');
-                    if (storedProducts) {
-                        this.products = JSON.parse(storedProducts);
-                    }
-                    // Restore isFeatured from featuredProductId
-                    const fid = localStorage.getItem('featuredProductId');
-                    if (fid) {
-                        this.products.forEach(p => {
-                            p.isFeatured = String(p.id) === String(fid);
-                        });
-                    }
-                    this.renderAll();
-                } catch (e) {
-                    console.error('Error sincronizando productos', e);
                 }
             }
         });

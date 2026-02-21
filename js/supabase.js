@@ -55,12 +55,37 @@
       );
     },
     async addOrder(order) {
-      const payload = { ...order, id: String(order.id || Date.now()) };
-      await handleResult(client.from('Orders').upsert(payload));
-    },
-    async upsertOrder(order) {
-      const payload = { ...order, id: String(order.id || Date.now()) };
-      await handleResult(client.from('Orders').upsert(payload));
+      // Serialize nested objects/arrays to JSON strings so they work whether
+      // the Supabase column type is JSONB or TEXT.
+      const payload = {
+        id:         String(order.id || Date.now()),
+        date:       order.date || new Date().toISOString(),
+        status:     order.status || 'pending_whatsapp',
+        channel:    order.channel || 'whatsapp',
+        total:      order.total || 0,
+        customer:   order.customer || '',
+        phone:      order.phone || '',
+        items:      typeof order.items === 'string' ? order.items : JSON.stringify(order.items || []),
+        address:    typeof order.address === 'string' ? order.address
+                      : JSON.stringify(order.address || {})
+      };
+      try {
+        await handleResult(client.from('Orders').upsert(payload));
+      } catch (error) {
+        // Retry with only the guaranteed columns to survive schema mismatches
+        console.warn('⚠️ Order full upsert failed, retrying minimal:', error.message);
+        const minimal = {
+          id:       payload.id,
+          date:     payload.date,
+          status:   payload.status,
+          total:    payload.total,
+          customer: payload.customer,
+          phone:    payload.phone,
+          items:    payload.items,
+          address:  payload.address
+        };
+        await handleResult(client.from('Orders').upsert(minimal));
+      }
     },
     async deleteAllOrders() {
       await handleResult(client.from('Orders').delete().neq('id', ''));

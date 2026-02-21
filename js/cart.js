@@ -293,9 +293,14 @@ const Cart = {
         if (window.supabaseHelpers && window.supabaseHelpers.addOrder) {
             try {
                 await window.supabaseHelpers.addOrder(newOrder);
+                console.log('✅ Pedido guardado en Supabase:', newOrder.id);
             } catch (err) {
-                console.error('❌ Error enviando pedido a Supabase', err);
+                // Log the full error so it's visible in DevTools on any device
+                console.error('❌ Error enviando pedido a Supabase:', err?.message || err, err);
+                // Do NOT block WhatsApp — order already saved in localStorage
             }
+        } else {
+            console.warn('⚠️ supabaseHelpers no disponible — pedido guardado solo en localStorage');
         }
 
         // 3. Abrir WhatsApp con manejo de bloqueo de popups
