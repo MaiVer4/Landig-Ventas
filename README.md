@@ -1,4 +1,4 @@
-# 🛒 NovaMarket — E-commerce con Panel de Administración
+# 🛒 Luxury Destilados — E-commerce con Panel de Administración
 
 [![Live Demo](https://img.shields.io/badge/demo-online-brightgreen.svg)](https://maiver4.github.io/Landig-Ventas/)
 [![GitHub](https://img.shields.io/badge/github-MaiVer4-blue.svg)](https://github.com/MaiVer4/Landig-Ventas)
