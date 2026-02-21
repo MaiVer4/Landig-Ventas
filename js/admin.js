@@ -60,7 +60,13 @@ const Admin = {
     async loadOrders() {
         if (window.supabaseHelpers && window.supabaseHelpers.fetchOrders) {
             try {
-                this.orders = await window.supabaseHelpers.fetchOrders();
+                const raw = await window.supabaseHelpers.fetchOrders();
+                // Supabase stores items/address as TEXT → parse them back to JS objects
+                this.orders = raw.map(o => ({
+                    ...o,
+                    items:   typeof o.items   === 'string' ? (() => { try { return JSON.parse(o.items);   } catch(e) { return []; } })()   : (Array.isArray(o.items)   ? o.items   : []),
+                    address: typeof o.address === 'string' ? (() => { try { return JSON.parse(o.address); } catch(e) { return {}; } })() : (o.address && typeof o.address === 'object' ? o.address : {})
+                }));
                 localStorage.setItem('orders', JSON.stringify(this.orders));
                 return;
             } catch (e) {
@@ -644,9 +650,14 @@ const Admin = {
         const emptyMsg = document.getElementById('noOrdersMsg');
         if (!tbody) return;
 
-        // Validate data format
+        // Validate data format — also handle items still stored as JSON string (TEXT column fallback)
         this.orders = Array.isArray(this.orders) ? this.orders : [];
-        this.orders = this.orders.filter(o => Array.isArray(o.items));
+        this.orders = this.orders.map(o => ({
+            ...o,
+            items: typeof o.items === 'string'
+                ? (() => { try { return JSON.parse(o.items); } catch(e) { return []; } })()
+                : (Array.isArray(o.items) ? o.items : [])
+        })).filter(o => Array.isArray(o.items));
 
         // Sort by last activity (paidAt/cancelledAt/date)
         const sortedOrders = [...this.orders].sort((a,b) => {
