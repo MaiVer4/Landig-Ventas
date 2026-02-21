@@ -72,7 +72,7 @@
       try {
         await handleResult(client.from('Orders').upsert(payload));
       } catch (error) {
-        // Retry with only the guaranteed columns to survive schema mismatches
+        // Retry with only the guaranteed columns; strip columns that might not exist yet
         console.warn('⚠️ Order full upsert failed, retrying minimal:', error.message);
         const minimal = {
           id:       payload.id,
@@ -80,11 +80,26 @@
           status:   payload.status,
           total:    payload.total,
           customer: payload.customer,
-          phone:    payload.phone,
-          items:    payload.items,
-          address:  payload.address
+          phone:    payload.phone
         };
-        await handleResult(client.from('Orders').upsert(minimal));
+        const msg = (error && error.message) || '';
+        if (!/address/i.test(msg)) minimal.address = payload.address;
+        if (!/items/i.test(msg))   minimal.items   = payload.items;
+
+        try {
+          await handleResult(client.from('Orders').upsert(minimal));
+        } catch (retryError) {
+          console.warn('⚠️ Minimal upsert failed, retrying base columns only:', retryError.message);
+          const base = {
+            id:       payload.id,
+            date:     payload.date,
+            status:   payload.status,
+            total:    payload.total,
+            customer: payload.customer,
+            phone:    payload.phone
+          };
+          await handleResult(client.from('Orders').upsert(base));
+        }
       }
     },
     async deleteAllOrders() {
