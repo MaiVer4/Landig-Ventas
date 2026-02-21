@@ -1,348 +1,308 @@
-# 🛒 NovaMarket - Landing de Ventas con Admin
+# 🛒 NovaMarket — E-commerce con Panel de Administración
 
 [![Live Demo](https://img.shields.io/badge/demo-online-brightgreen.svg)](https://maiver4.github.io/Landig-Ventas/)
 [![GitHub](https://img.shields.io/badge/github-MaiVer4-blue.svg)](https://github.com/MaiVer4/Landig-Ventas)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-E-commerce moderno y completamente funcional con sistema de gestión de inventario y pedidos. Perfecto para negocios que desean vender por WhatsApp con un catálogo profesional.
+E-commerce moderno y completamente funcional con catálogo dinámico, carrito de compras, checkout por WhatsApp y panel de administración con sincronización en tiempo real vía Supabase.
 
-![NovaMarket Preview](https://maiver4.github.io/Luxury-Distillates/)
+---
 
-## ✨ Características Principales
+## ✨ Características
 
-### 🏪 Tienda Online
-- **Catálogo dinámico** con filtros por categorías
-- **Sistema de ofertas** con descuentos y badges visuales
-- **Carrito de compras** persistente (localStorage)
-- **Checkout por WhatsApp** - Genera mensaje automático con el pedido
-- **Responsive design** - Funciona perfecto en móviles y desktop
-- **Formato de moneda colombiana** (COP)
+### �� Tienda
+- Catálogo de productos con filtros por categorías dinámicas
+- Modal de detalle de producto con galería de imágenes
+- Productos destacados en carrusel
+- Sistema de ofertas con porcentaje de descuento y badges
+- Carrito persistente con ajuste de cantidades
+- Checkout por WhatsApp — genera el mensaje automáticamente con el pedido completo
+- Diseño totalmente responsive (mobile, tablet, desktop)
+- Formato de moneda colombiana (COP)
 
-### 👨‍💼 Panel de Administración
-- **Dashboard con métricas** en tiempo real
-- **Gestión de inventario** - CRUD completo de productos
-- **Control de stock** - Alertas de productos por agotarse
-- **Gestión de pedidos** - Marcar como pagado/cancelado
-- **Gráficos de ventas** - Visualización por día/semana/mes/año
-- **Sistema de categorías** - Crear y gestionar categorías personalizadas
-- **Business Intelligence** - Insights automáticos sobre tu negocio
-- **Exportación a CSV** - Descarga tu inventario
+### 👨‍💼 Panel de Administración (`/admin.html`)
+- Dashboard con métricas: total productos, valor de inventario, stock bajo
+- Gráfico de ventas interactivo (diario / semanal / mensual / anual) con Chart.js
+- Gestión completa de productos (crear, editar, eliminar, ocultar, destacar)
+- Visibilidad y destacado sincronizados entre dispositivos vía Supabase
+- Gestión de pedidos (pendiente → pagado / cancelado, descuento de stock automático)
+- Gestión de categorías sincronizadas con Supabase
+- Exportación de inventario a CSV
+- Business Intelligence: insights y recomendaciones
 
-## 🚀 Demo en Vivo
+---
 
-**Tienda:** [https://maiver4.github.io/Landig-Ventas/](https://maiver4.github.io/Luxury-Distillates/)
+## 🛠️ Stack Tecnológico
 
-**Admin:** [https://maiver4.github.io/Landig-Ventas/admin.html](https://maiver4.github.io/Luxury-Distillates/admin.html)
+| Capa | Tecnología |
+|---|---|
+| Frontend | HTML5, CSS3, JavaScript Vanilla |
+| Estilos Admin | Tailwind CSS (CDN) |
+| Iconos | Font Awesome 6.4.0 (CDN) |
+| Gráficos | Chart.js (CDN) |
+| Base de datos | Supabase (PostgreSQL) |
+| Hosting | GitHub Pages |
 
-## 📸 Screenshots
+---
 
-<details>
-<summary>Ver Capturas de Pantalla</summary>
+## 📂 Estructura del Proyecto
 
-### Tienda Principal
-![Tienda](https://via.placeholder.com/800x400/6366f1/ffffff?text=Landing+Page)
+```
+landing-ventas/
+├── index.html          # Tienda pública
+├── admin.html          # Panel de administración
+├── css/
+│   └── styles.css      # Estilos de la tienda
+├── js/
+│   ├── supabase.js     # Cliente Supabase (CRUD Products, Orders, Categories)
+│   ├── main.js         # Lógica de la tienda (catálogo, filtros, modales)
+│   ├── cart.js         # Carrito y checkout por WhatsApp
+│   └── admin.js        # Lógica del panel de administración
+├── robots.txt          # Directivas SEO para crawlers
+├── sitemap.xml         # Mapa del sitio
+└── README.md
+```
 
-### Panel Admin - Dashboard
-![Dashboard](https://via.placeholder.com/800x400/6366f1/ffffff?text=Admin+Dashboard)
+---
 
-### Gestión de Pedidos
-![Pedidos](https://via.placeholder.com/800x400/6366f1/ffffff?text=Order+Management)
+## 🗄️ Base de Datos (Supabase)
 
-</details>
+El proyecto usa tres tablas en Supabase. Ejecuta este SQL en el **SQL Editor** de tu proyecto:
 
-## 🛠️ Tecnologías
+### Tabla `Products`
 
-- **HTML5** - Estructura semántica
-- **CSS3** - Diseño moderno y animaciones
-- **JavaScript Vanilla** - Sin frameworks, código limpio
-- **Font Awesome** - Iconos
-- **Chart.js** - Gráficos interactivos
-- **Tailwind CSS** (CDN) - Estilos del admin
-- **localStorage API** - Persistencia de datos
+```sql
+CREATE TABLE public."Products" (
+  id           TEXT PRIMARY KEY,
+  name         TEXT NOT NULL,
+  description  TEXT DEFAULT '',
+  price        NUMERIC NOT NULL DEFAULT 0,
+  category     TEXT DEFAULT '',
+  stock        INTEGER DEFAULT 0,
+  image        TEXT DEFAULT '',
+  gallery      JSONB DEFAULT '[]',
+  is_visible   BOOLEAN DEFAULT true,
+  is_featured  BOOLEAN DEFAULT false,
+  categories   JSONB DEFAULT '[]'
+);
 
-## 📦 Instalación
+ALTER TABLE public."Products" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read"  ON public."Products" FOR SELECT USING (true);
+CREATE POLICY "public write" ON public."Products" FOR ALL   USING (true);
+```
 
-### Opción 1: GitHub Pages (Recomendado)
+### Tabla `Orders`
 
-1. **Fork este repositorio**
-   ```bash
-   # Haz clic en "Fork" en GitHub
-   ```
+```sql
+CREATE TABLE public."Orders" (
+  id          TEXT PRIMARY KEY,
+  date        TIMESTAMPTZ DEFAULT NOW(),
+  status      TEXT DEFAULT 'pending_whatsapp',
+  channel     TEXT DEFAULT 'whatsapp',
+  total       NUMERIC DEFAULT 0,
+  customer    TEXT DEFAULT '',
+  phone       TEXT DEFAULT '',
+  items       TEXT DEFAULT '[]',
+  address     TEXT DEFAULT '{}'
+);
 
-2. **Activa GitHub Pages**
-   - Ve a Settings → Pages
-   - Source: Deploy from a branch
-   - Branch: `main` → `/root`
-   - Guarda los cambios
+ALTER TABLE public."Orders" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read"  ON public."Orders" FOR SELECT USING (true);
+CREATE POLICY "public write" ON public."Orders" FOR ALL   USING (true);
+```
 
-3. **Accede a tu sitio**
+### Tabla `Categories`
+
+```sql
+CREATE TABLE public."Categories" (
+  id    TEXT PRIMARY KEY,
+  name  TEXT NOT NULL,
+  slug  TEXT NOT NULL UNIQUE,
+  "order" INTEGER DEFAULT 0
+);
+
+ALTER TABLE public."Categories" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public read"  ON public."Categories" FOR SELECT USING (true);
+CREATE POLICY "public write" ON public."Categories" FOR ALL   USING (true);
+```
+
+---
+
+## ⚙️ Configuración
+
+### 1. Supabase — credenciales
+
+Edita `index.html` y `admin.html`. Busca el bloque `window.supabaseConfig`:
+
+```html
+<script>
+  window.supabaseConfig = {
+    url:     'https://TU-PROYECTO.supabase.co',
+    anonKey: 'TU_ANON_KEY'
+  };
+</script>
+```
+
+Encuentra tu URL y `anon key` en **Supabase → Project Settings → API**.
+
+### 2. Número de WhatsApp
+
+Edita `js/cart.js`:
+
+```javascript
+const phoneNumber = "573219395309"; // reemplaza con tu número (código de país sin +)
+```
+
+### 3. Credenciales del Admin
+
+Edita `js/admin.js` y busca la función `setupAuth`:
+
+```javascript
+if (user === 'admin' && pass === 'admin123') {
+  // cambia 'admin' y 'admin123' por tus credenciales
+}
+```
+
+---
+
+## 🚀 Despliegue en GitHub Pages
+
+1. **Fork** este repositorio
+2. Ve a **Settings → Pages**
+3. Source: `Deploy from a branch` → rama `main` → carpeta `/root`
+4. Guarda — tu tienda estará disponible en:
    ```
    https://TU-USUARIO.github.io/Landig-Ventas/
    ```
 
-### Opción 2: Local
+### Desarrollo local
 
-1. **Clona el repositorio**
-   ```bash
-   git clone https://github.com/MaiVer4/Landig-Ventas.git
-   cd Landig-Ventas
-   ```
+```bash
+git clone https://github.com/MaiVer4/Landig-Ventas.git
+cd Landig-Ventas
 
-2. **Abre con Live Server**
-   ```bash
-   # Con VSCode
-   # Instala la extensión "Live Server"
-   # Click derecho en index.html → "Open with Live Server"
-   
-   # O usa Python
-   python -m http.server 8000
-   
-   # O Node.js
-   npx serve
-   ```
+# Python
+python -m http.server 8000
 
-3. **Accede a la aplicación**
-   ```
-   http://localhost:8000
-   ```
-
-## ⚙️ Configuración
-
-### 1. Número de WhatsApp
-
-Edita `js/cart.js` línea 154:
-
-```javascript
-const phoneNumber = "573219395309"; // Cambia por tu número
+# Node.js
+npx serve
 ```
 
-### 2. Datos Iniciales
+Abre `http://localhost:8000`.
 
-Edita `data/products.json` para personalizar tu catálogo:
+---
 
-```json
-{
-  "id": 1,
-  "name": "Nombre del Producto",
-  "description": "Descripción detallada",
-  "price": 100000,
-  "stock": 50,
-  "category": "tecnologia",
-  "image": "https://...",
-  "isOffer": true,
-  "discountPercent": 20
-}
-```
+## 🎯 Cómo usar
 
-### 3. Credenciales Admin
+### Flujo del cliente
 
-Edita `js/admin.js` línea 88:
+1. Navega el catálogo y filtra por categoría
+2. Abre el modal de un producto para ver detalles y galería
+3. Añade productos al carrito con `+`
+4. Ajusta cantidades o elimina ítems en el carrito
+5. Haz clic en **Enviar pedido por WhatsApp** → se abre WhatsApp con el resumen completo
 
-```javascript
-if (user === 'admin' && pass === 'admin123') {
-  // Cambia las credenciales aquí
-}
-```
+### Flujo del administrador
 
-### 4. Información de Contacto
+1. Accede a `/admin.html` e inicia sesión
+2. **Dashboard** — visualiza métricas y stock bajo
+3. **Pedidos** — gestiona los pedidos entrantes:
+   - **Pagado** → descuenta el stock automáticamente y sincroniza en Supabase
+   - **Cancelado** → archiva el pedido
+4. **Inventario** — crea y edita productos; controla visibilidad y destacado (sincronizado en todos los dispositivos vía Supabase)
+5. **Categorías** — añade o edita categorías; se reflejan en los filtros de la tienda al instante
 
-Edita `index.html` líneas 119-123:
-
-```html
-<li><i class="fas fa-map-marker-alt"></i> Tu Ciudad, Colombia</li>
-<li><i class="fas fa-phone"></i> +57 300 123 4567</li>
-<li><i class="fas fa-envelope"></i> info@tutienda.com</li>
-```
-
-## 📚 Estructura del Proyecto
+### Flujo del pedido
 
 ```
-Landig-Ventas/
-├── index.html              # Landing principal
-├── admin.html              # Panel de administración
-├── css/
-│   └── styles.css          # Estilos globales
-├── js/
-│   ├── main.js            # Lógica de la tienda
-│   ├── cart.js            # Sistema de carrito
-│   └── admin.js           # Lógica del admin
-├── data/
-│   └── products.json      # Catálogo de productos
-├── robots.txt             # SEO - Crawlers
-├── sitemap.xml            # SEO - Mapa del sitio
-└── README.md              # Esta documentación
+Cliente añade productos
+        ↓
+  Checkout WhatsApp
+        ↓
+  Pedido guardado en Supabase  ←→  localStorage (fallback)
+        ↓
+  Estado: Pendiente WhatsApp
+        ↓
+  Admin revisa
+   ├── Pagado   → Stock descontado + Supabase actualizado
+   └── Cancelado → Archivado
 ```
 
-## 🎯 Uso
+---
 
-### Para Clientes (Tienda)
+## 🌐 SEO
 
-1. **Navegar productos** por categorías
-2. **Añadir al carrito** con el botón `+`
-3. **Ver carrito** haciendo clic en el ícono superior derecho
-4. **Ajustar cantidades** con `+` / `-`
-5. **Checkout** → Se abre WhatsApp con el pedido
+- Meta tags completos (title, description, keywords)
+- Open Graph y Twitter Cards
+- Structured Data (JSON-LD / Schema.org)
+- `robots.txt` y `sitemap.xml` incluidos
+- Semántica HTML5 y atributos ARIA
 
-### Para Administradores (Admin)
-
-1. **Acceder** a `admin.html`
-2. **Iniciar sesión** con credenciales
-3. **Dashboard** - Visualiza métricas generales
-4. **Pedidos** - Gestiona pedidos de WhatsApp
-   - Marcar como "Pagado" (descuenta stock automáticamente)
-   - Marcar como "Cancelado"
-5. **Inventario** - CRUD de productos
-   - Crear, editar, eliminar productos
-   - Control de stock en tiempo real
-6. **Categorías** - Gestionar categorías de productos
-7. **Inteligencia** - Ver análisis y recomendaciones
-
-## 🔄 Flujo de Pedidos
-
-```mermaid
-graph LR
-    A[Cliente añade productos] --> B[Checkout por WhatsApp]
-    B --> C[Pedido guardado en localStorage]
-    C --> D[Estado: Pendiente WhatsApp]
-    D --> E{Admin revisa}
-    E --> F[Marcar como Pagado]
-    E --> G[Marcar como Cancelado]
-    F --> H[Stock descontado]
-    F --> I[Actualiza gráficos]
-    G --> J[Pedido archivado]
-```
-
-## 📊 Características del Admin
-
-### Dashboard
-- Total de productos
-- Valor total del inventario
-- Alertas de stock bajo
-- Gráfico de ventas (4 vistas temporales)
-- Lista de productos por agotarse
-
-### Gestión de Pedidos
-- Tabla con todos los pedidos
-- Filtro por estado (Pendiente/Pagado/Cancelado)
-- Botones de acción rápida
-- Validación de stock antes de confirmar pago
-- Actualización automática de inventario
-
-### Gestión de Productos
-- Tabla con vista previa de imágenes
-- Modal para crear/editar
-- Soporte para ofertas y descuentos
-- Control de stock
-- Exportación a CSV
+---
 
 ## 🔒 Seguridad
 
-⚠️ **IMPORTANTE:** Esta es una demo educativa con autenticación básica del lado del cliente.
+> ⚠️ La autenticación del admin es del lado del cliente. Para producción se recomienda implementar autenticación real (Supabase Auth, JWT, etc.) y políticas RLS más restrictivas en Supabase.
 
-**Para producción:**
-- Implementa autenticación real con backend
-- Usa base de datos (Firebase, Supabase, etc.)
-- Protege endpoints con JWT o OAuth
-- No almacenes credenciales en el código fuente
-- Implementa validación del lado del servidor
-
-## 🌐 SEO Optimizado
-
-✅ Meta tags completos (Title, Description, Keywords)
-✅ Open Graph para redes sociales
-✅ Twitter Cards
-✅ Structured Data (JSON-LD Schema.org)
-✅ robots.txt configurado
-✅ sitemap.xml generado
-✅ Semántica HTML5 correcta
-✅ Accesibilidad (ARIA labels)
-
-## 📱 Responsive Design
-
-- ✅ Mobile First
-- ✅ Tablet optimizado
-- ✅ Desktop completo
-- ✅ Menú hamburguesa móvil
-- ✅ Carrito lateral adaptativo
+---
 
 ## 🐛 Troubleshooting
 
 ### Los pedidos no aparecen en el admin
 
-**Solución:** Asegúrate de acceder a la tienda y al admin desde el mismo dominio.
-
-- ❌ Tienda: `https://maiver4.github.io/...` + Admin: `http://localhost:5500/admin.html`
-- ✅ Tienda: `https://maiver4.github.io/...` + Admin: `https://maiver4.github.io/.../admin.html`
+Verifica que la tabla `Orders` exista en Supabase y que las políticas RLS permitan lectura y escritura pública (ver SQL de arriba).
 
 ### Los productos no cargan
 
-**Solución:** Verifica que `data/products.json` esté en la ruta correcta y sea JSON válido.
+1. Comprueba que `window.supabaseConfig` tenga la URL y anon key correctas
+2. Verifica en Supabase → Table Editor que la tabla `Products` tenga filas
+3. Asegúrate de que las políticas RLS estén activas
 
-```bash
-# Validar JSON
-cat data/products.json | python -m json.tool
+### Visibilidad/destacado no se sincroniza entre dispositivos
+
+Confirma que las columnas `is_visible`, `is_featured` y `categories` existan en la tabla `Products`. Si no, ejecuta:
+
+```sql
+ALTER TABLE public."Products" ADD COLUMN IF NOT EXISTS is_visible  BOOLEAN DEFAULT true;
+ALTER TABLE public."Products" ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT false;
+ALTER TABLE public."Products" ADD COLUMN IF NOT EXISTS categories  JSONB   DEFAULT '[]';
 ```
 
 ### El gráfico no se muestra
 
-**Solución:** Asegúrate de que Chart.js se cargue correctamente desde el CDN.
+Asegúrate de que Chart.js se cargue desde CDN antes de `admin.js`:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 ```
 
-## 🚀 Roadmap
-
-- [ ] Backend con Node.js/Express
-- [ ] Base de datos (MongoDB/PostgreSQL)
-- [ ] Autenticación real (JWT)
-- [ ] Pasarela de pagos (Mercado Pago/PayU)
-- [ ] Panel de clientes
-- [ ] Sistema de tracking de envíos
-- [ ] Notificaciones push
-- [ ] PWA (Progressive Web App)
-- [ ] Modo offline
-- [ ] Multi-idioma
-- [ ] Sistema de cupones/descuentos
+---
 
 ## 🤝 Contribuir
 
-¡Las contribuciones son bienvenidas!
-
 1. Fork el proyecto
-2. Crea tu rama (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add: AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
+2. Crea tu rama: `git checkout -b feature/nueva-funcionalidad`
+3. Commit: `git commit -m 'feat: descripción del cambio'`
+4. Push: `git push origin feature/nueva-funcionalidad`
 5. Abre un Pull Request
-
-## 📝 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
-
-## 👤 Autor
-
-**MaiVer4**
-
-- GitHub: [@MaiVer4](https://github.com/MaiVer4)
-- Proyecto: [Landig-Ventas](https://github.com/MaiVer4/Landig-Ventas)
-
-## 🙏 Agradecimientos
-
-- [Font Awesome](https://fontawesome.com) - Iconos
-- [Chart.js](https://www.chartjs.org) - Gráficos
-- [Tailwind CSS](https://tailwindcss.com) - Framework CSS
-- [Unsplash](https://unsplash.com) - Imágenes de ejemplo
-
-## 📞 Soporte
-
-¿Necesitas ayuda? 
-
-- 🐛 [Reportar un bug](https://github.com/MaiVer4/Landig-Ventas/issues)
-- 💡 [Solicitar una feature](https://github.com/MaiVer4/Landig-Ventas/issues)
-- 📧 Contacto: [Crear issue](https://github.com/MaiVer4/Landig-Ventas/issues/new)
 
 ---
 
-⭐ **Si este proyecto te fue útil, dale una estrella en GitHub!** ⭐
+## 📝 Licencia
 
-Hecho con ❤️ por [MaiVer4](https://github.com/MaiVer4)
+MIT — ver [LICENSE](LICENSE) para más detalles.
+
+---
+
+## 👤 Autor
+
+**MaiVer4** · [GitHub](https://github.com/MaiVer4) · [Proyecto](https://github.com/MaiVer4/Landig-Ventas)
+
+---
+
+## 🙏 Créditos
+
+- [Supabase](https://supabase.com) — Backend y base de datos
+- [Chart.js](https://www.chartjs.org) — Gráficos
+- [Font Awesome](https://fontawesome.com) — Iconos
+- [Tailwind CSS](https://tailwindcss.com) — Estilos del admin
