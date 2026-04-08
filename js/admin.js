@@ -719,6 +719,16 @@ const Admin = {
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 `;
+            } else if (o.status === 'pending_payment') {
+                statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-200 inline-flex items-center gap-1"><i class="fa-solid fa-credit-card"></i>Pago Online Pendiente</span>';
+                actions = `
+                    <button onclick="Admin.updateOrderStatus('${o.id}', 'paid')" class="bg-emerald-100 text-emerald-600 hover:bg-emerald-200 p-2 rounded mr-1 transition-colors" title="Confirmar Pago">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                    <button onclick="Admin.updateOrderStatus('${o.id}', 'cancelled')" class="bg-red-100 text-red-600 hover:bg-red-200 p-2 rounded transition-colors" title="Cancelar Pedido">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
             } else if (o.status === 'paid') {
                 statusBadge = '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold border border-emerald-200 inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i>Pagado</span>';
                 actions = '<span class="text-xs text-slate-400">Completado</span>';
@@ -831,111 +841,129 @@ const Admin = {
         this.currentTimeframe = timeframe;
         if (!this.salesChart) return;
 
+        // ── Actualizar botones activos ──────────────────────────────
         const buttons = document.querySelectorAll('#chartTimeframeBtns button');
         if (buttons.length) {
             buttons.forEach(btn => {
                 btn.classList.remove('bg-indigo-600', 'text-white');
                 btn.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-50');
             });
-
             if (!btnElement) {
                 btnElement = document.querySelector(`#chartTimeframeBtns button[data-timeframe="${timeframe}"]`);
             }
-
             if (btnElement) {
                 btnElement.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-50');
                 btnElement.classList.add('bg-indigo-600', 'text-white');
             }
         }
 
-        let labels = [];
-        let dataMap = [];
-        let label = '';
-        const now = new Date();
-        const paidOrders = this.orders.filter(order => order.status === 'paid');
+        // ── Helper: compara dos fechas por día local (evita desfase UTC) ──
+        const isSameLocalDay = (a, b) => {
+            return a.getFullYear() === b.getFullYear()
+                && a.getMonth()    === b.getMonth()
+                && a.getDate()     === b.getDate();
+        };
 
-        switch(timeframe) {
-            case 'daily':
-                // Shows paid orders grouped by 4-hour blocks of the current day
+        let labels  = [];
+        let dataMap = [];
+        let label   = '';
+
+        const now        = new Date();
+        const paidOrders = this.orders.filter(o => o.status === 'paid');
+
+        switch (timeframe) {
+
+            // ── DIARIO: bloques de 4 horas del día actual ──────────
+            case 'daily': {
                 label = 'Ventas de Hoy';
                 const slots = [
-                    { label: '00-04', start: 0, end: 4 },
-                    { label: '04-08', start: 4, end: 8 },
-                    { label: '08-12', start: 8, end: 12 },
-                    { label: '12-16', start: 12, end: 16 },
-                    { label: '16-20', start: 16, end: 20 },
-                    { label: '20-24', start: 20, end: 24 }
+                    { label: '00–04h', start: 0,  end: 4  },
+                    { label: '04–08h', start: 4,  end: 8  },
+                    { label: '08–12h', start: 8,  end: 12 },
+                    { label: '12–16h', start: 12, end: 16 },
+                    { label: '16–20h', start: 16, end: 20 },
+                    { label: '20–24h', start: 20, end: 24 },
                 ];
-
-                labels = slots.map(slot => slot.label);
-                dataMap = slots.map(slot => {
-                    return paidOrders.reduce((acc, order) => {
+                labels  = slots.map(s => s.label);
+                dataMap = slots.map(slot =>
+                    paidOrders.reduce((acc, order) => {
                         const d = new Date(order.paidAt || order.date);
-                        if (d.toDateString() !== now.toDateString()) return acc;
-                        const hour = d.getHours();
-                        if (hour >= slot.start && hour < slot.end) {
-                            return acc + order.total;
-                        }
-                        return acc;
-                    }, 0);
-                });
+                        if (!isSameLocalDay(d, now)) return acc;
+                        const h = d.getHours();
+                        return (h >= slot.start && h < slot.end) ? acc + (order.total || 0) : acc;
+                    }, 0)
+                );
                 break;
+            }
 
-            case 'weekly':
-                label = 'Ventas Últimos 7 Días';
-                labels = [];
+            // ── SEMANAL: últimos 7 días con nombre + número ─────────
+            case 'weekly': {
+                label   = 'Ventas – Últimos 7 días';
+                labels  = [];
                 dataMap = [];
                 for (let i = 6; i >= 0; i--) {
-                    const d = new Date(now);
-                    d.setDate(d.getDate() - i);
-                    const dayName = d.toLocaleDateString('es-ES', { weekday: 'short' });
-                    labels.push(dayName);
-                    
+                    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+                    labels.push(day.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric' }));
                     const dayTotal = paidOrders.reduce((acc, order) => {
-                        const od = new Date(order.paidAt || order.date);
-                        return od.toDateString() === d.toDateString() ? acc + order.total : acc;
+                        const d = new Date(order.paidAt || order.date);
+                        return isSameLocalDay(d, day) ? acc + (order.total || 0) : acc;
                     }, 0);
                     dataMap.push(dayTotal);
                 }
                 break;
+            }
 
-            case 'monthly':
-                label = 'Ventas del Mes (Semanas)';
-                labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
-                dataMap = [0, 0, 0, 0];
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                
-                paidOrders.forEach(order => {
-                    const d = new Date(order.paidAt || order.date);
-                    if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-                        const day = d.getDate(); // 1-31
-                        const week = Math.min(Math.floor((day - 1) / 7), 3); // 0-3
-                        dataMap[week] += order.total;
-                    }
-                });
+            // ── MENSUAL: semanas dinámicas hasta el último día del mes ──
+            case 'monthly': {
+                label = 'Ventas del Mes (por semana)';
+                const year        = now.getFullYear();
+                const month       = now.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const monthShort  = now.toLocaleDateString('es-CO', { month: 'short' });
+                const weeks = [
+                    { label: `1–7 ${monthShort}`, from: 1,  to: 7           },
+                    { label: '8–14',               from: 8,  to: 14          },
+                    { label: '15–21',              from: 15, to: 21          },
+                    { label: `22–${daysInMonth}`,  from: 22, to: daysInMonth },
+                ];
+                labels  = weeks.map(w => w.label);
+                dataMap = weeks.map(w =>
+                    paidOrders.reduce((acc, order) => {
+                        const d = new Date(order.paidAt || order.date);
+                        if (d.getFullYear() !== year || d.getMonth() !== month) return acc;
+                        const day = d.getDate();
+                        return (day >= w.from && day <= w.to) ? acc + (order.total || 0) : acc;
+                    }, 0)
+                );
                 break;
+            }
 
-            case 'yearly':
-                label = 'Ventas del Año';
-                labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            // ── ANUAL: todos los meses del año ─────────────────────
+            case 'yearly': {
+                label   = 'Ventas del Año';
+                labels  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
                 dataMap = new Array(12).fill(0);
-                
                 paidOrders.forEach(order => {
                     const d = new Date(order.paidAt || order.date);
                     if (d.getFullYear() === now.getFullYear()) {
-                        dataMap[d.getMonth()] += order.total;
+                        dataMap[d.getMonth()] += (order.total || 0);
                     }
                 });
                 break;
+            }
         }
 
-        if (this.salesChart) {
-            this.salesChart.data.labels = labels;
-            this.salesChart.data.datasets[0].label = label;
-            this.salesChart.data.datasets[0].data = dataMap;
-            this.salesChart.update();
-        }
+        // ── Actualizar chart ────────────────────────────────────────
+        this.salesChart.data.labels                   = labels;
+        this.salesChart.data.datasets[0].label        = label;
+        this.salesChart.data.datasets[0].data         = dataMap;
+
+        // Si no hay datos, mostrar eje Y decorativo para evitar gráfico plano
+        const hasData = dataMap.some(v => v > 0);
+        this.salesChart.options.scales.y.suggestedMax = hasData ? undefined : 100000;
+        this.salesChart.options.scales.y.beginAtZero  = true;
+
+        this.salesChart.update('active');
     },
 
     setupGlobalHelpers() {

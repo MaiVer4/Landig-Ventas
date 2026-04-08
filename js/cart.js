@@ -1,5 +1,6 @@
 const Cart = {
     items: [],
+    selectedPayment: 'whatsapp',
 
     init() {
         const savedCart = localStorage.getItem('cart');
@@ -74,6 +75,28 @@ const Cart = {
         setTimeout(() => toast.remove(), 7000);
     },
 
+    selectPayment(method) {
+        this.selectedPayment = method;
+        const optWa = document.getElementById('optWhatsapp');
+        const optWp = document.getElementById('optWompi');
+        if (optWa) optWa.classList.toggle('selected', method === 'whatsapp');
+        if (optWp) optWp.classList.toggle('selected', method === 'wompi');
+        const btn = document.getElementById('sendWhatsAppBtn');
+        if (btn) {
+            if (method === 'wompi') {
+                btn.innerHTML = '<span><i class="fas fa-credit-card"></i> Pagar en línea</span>';
+            } else {
+                btn.innerHTML = '<span><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</span>';
+            }
+        }
+    },
+
+    async sha256(message) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    },
 
     updateBadge() {
         const count = this.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -163,6 +186,7 @@ const Cart = {
 
         // Close cart and open order modal
         this.close();
+        this.selectPayment('whatsapp'); // Resetear al default cada vez que se abre
         document.getElementById('orderModal').classList.add('active');
         document.getElementById('orderModalOverlay').classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -180,6 +204,116 @@ const Cart = {
     },
 
     async checkout() {
+        if (this.selectedPayment === 'wompi') {
+            await this.checkoutWompi();
+        } else {
+            await this.checkoutWhatsApp();
+        }
+    },
+
+    async checkoutWompi() {
+        const cfg = window.wompiConfig;
+        if (!cfg || !cfg.publicKey || !cfg.integritySecret ||
+            cfg.publicKey === 'PENDIENTE' || cfg.integritySecret === 'PENDIENTE') {
+            this._showToast('⚠️ Pasarela de pagos no configurada aún. Por favor usa WhatsApp.', 'error');
+            return;
+        }
+
+        const nameInput    = document.getElementById('customerName');
+        const phoneInput   = document.getElementById('customerPhone');
+        const cityInput    = document.getElementById('customerCity');
+        const addressInput = document.getElementById('customerAddress');
+
+        const customerName         = nameInput?.value?.trim()    || '';
+        const customerPhone        = phoneInput?.value?.trim()   || '';
+        const customerCity         = cityInput?.value?.trim()    || '';
+        const customerAddress      = addressInput?.value?.trim() || '';
+        const customerNeighborhood = document.getElementById('customerNeighborhood')?.value?.trim() || '';
+        const customerApartment    = document.getElementById('customerApartment')?.value?.trim()    || '';
+        const customerLandmark     = document.getElementById('customerLandmark')?.value?.trim()     || '';
+        const customerNotes        = document.getElementById('customerNotes')?.value?.trim()        || '';
+
+        let hasError = false;
+        if (!customerName)  { nameInput?.classList.add('error');    hasError = true; } else { nameInput?.classList.remove('error'); }
+        if (!customerPhone || customerPhone.replace(/\D/g, '').length < 10) { phoneInput?.classList.add('error'); hasError = true; } else { phoneInput?.classList.remove('error'); }
+        if (!customerCity)    { cityInput?.classList.add('error');    hasError = true; } else { cityInput?.classList.remove('error'); }
+        if (!customerAddress) { addressInput?.classList.add('error'); hasError = true; } else { addressInput?.classList.remove('error'); }
+        if (hasError) { alert('Por favor completa todos los campos obligatorios marcados con (*)'); return; }
+        if (this.items.length === 0) { alert('El carrito está vacío'); return; }
+
+        let fullAddress = customerAddress;
+        if (customerApartment)    fullAddress += `, ${customerApartment}`;
+        if (customerNeighborhood) fullAddress += ` - ${customerNeighborhood}`;
+        fullAddress += `, ${customerCity}`;
+
+        const total       = this.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+        const orderId     = Date.now();
+        const reference   = `LUXDEST-${orderId}`;
+        const amountCents = Math.round(total * 100);
+
+        const newOrder = {
+            id:       orderId,
+            date:     new Date().toISOString(),
+            status:   'pending_payment',
+            channel:  'wompi',
+            items:    JSON.parse(JSON.stringify(this.items)),
+            total,
+            customer: customerName,
+            phone:    customerPhone,
+            address: {
+                city:         customerCity,
+                street:       customerAddress,
+                neighborhood: customerNeighborhood,
+                apartment:    customerApartment,
+                landmark:     customerLandmark,
+                notes:        customerNotes,
+                full:         fullAddress
+            }
+        };
+
+        // Guardar en localStorage
+        try {
+            const existing = JSON.parse(localStorage.getItem('orders') || '[]');
+            existing.push(newOrder);
+            localStorage.setItem('orders', JSON.stringify(existing));
+        } catch (e) {}
+
+        // Guardar en Supabase antes de redirigir
+        if (window.supabaseHelpers && window.supabaseHelpers.addOrder) {
+            try { await window.supabaseHelpers.addOrder(newOrder); } catch (e) { console.warn('Supabase pre-save wompi failed:', e); }
+        }
+
+        // Guardar referencia para verificar al retornar
+        localStorage.setItem('wompiPendingRef', JSON.stringify({ reference, orderId: String(orderId) }));
+
+        // Generar firma de integridad: SHA256(reference + amountCents + "COP" + integritySecret)
+        const signature = await this.sha256(`${reference}${amountCents}COP${cfg.integritySecret}`);
+
+        // Construir URL de checkout Wompi
+        // IMPORTANTE: URLSearchParams codifica ':' como '%3A' en las claves,
+        // lo que hace que Wompi devuelva 403. Se construye manualmente para
+        // preservar los ':' literales que Wompi requiere en sus parámetros.
+        const redirectUrl = window.location.origin + window.location.pathname;
+        const wompiParams = [
+            ['public-key',                        cfg.publicKey],
+            ['currency',                          'COP'],
+            ['amount-in-cents',                   String(amountCents)],
+            ['reference',                         reference],
+            ['signature:integrity',               signature],
+            ['redirect-url',                      redirectUrl],
+            ['customer-data:full-name',           customerName],
+            ['customer-data:phone-number',        customerPhone.replace(/\D/g, '').slice(-10)],
+            ['customer-data:phone-number-prefix', '+57']
+        ];
+        // Codifica valores pero mantiene ':' sin codificar en los nombres de clave
+        const queryString = wompiParams
+            .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+            .join('&');
+
+        window.location.href = `https://checkout.wompi.co/p/?${queryString}`;
+    },
+
+    async checkoutWhatsApp() {
         // Get all form inputs
         const nameInput = document.getElementById('customerName');
         const phoneInput = document.getElementById('customerPhone');

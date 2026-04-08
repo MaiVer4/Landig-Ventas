@@ -124,6 +124,11 @@
         client.from('Products').update(fields).eq('id', String(id))
       );
     },
+    async patchOrder(id, fields) {
+      await handleResult(
+        client.from('Orders').update(fields).eq('id', String(id))
+      );
+    },
     async upsertProduct(product) {
       // Map client-side field names → Supabase column names.
       // The retry handler below will strip unrecognised columns gracefully

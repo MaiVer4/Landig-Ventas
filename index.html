@@ -1923,7 +1923,60 @@ footer {
     flex: 2;
     justify-content: center;
 }
-
+/* ─── PAYMENT METHOD SELECTOR ─────────────────────────── */
+.payment-selector {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+.payment-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.payment-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    background: var(--dark);
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s;
+}
+.payment-option:hover { border-color: rgba(212,175,55,0.4); }
+.payment-option.selected { border-color: var(--gold); background: rgba(212,175,55,0.07); }
+.payment-option input[type="radio"] { display: none; }
+.payment-option-icon { font-size: 1.4rem; flex-shrink: 0; width: 26px; text-align: center; padding-top: 2px; }
+.payment-option-info { display: flex; flex-direction: column; gap: 2px; }
+.payment-option-name { font-size: 13px; font-weight: 700; color: var(--white); }
+.payment-option-desc { font-size: 11px; color: var(--white-muted); }
+.payment-logos { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+.payment-logo { font-size: 8px; font-weight: 800; padding: 2px 4px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+.logo-visa   { background: #1a1f71; color: #fff; }
+.logo-mc     { background: #eb001b; color: #fff; }
+.logo-pse    { background: #003087; color: #fff; }
+.logo-nequi  { background: #6b0faa; color: #fff; }
+.logo-efecty { background: #f5c518; color: #000; }
+/* ─── PAYMENT RESULT MODAL ─────────────────────────────── */
+.payment-result-overlay {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,0.88); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+.payment-result-overlay.active { opacity: 1; visibility: visible; }
+.payment-result-box {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 44px 36px; max-width: 420px; width: 90%; text-align: center;
+}
+.payment-result-icon { font-size: 3rem; margin-bottom: 18px; line-height: 1; }
+.payment-result-title {
+    font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700;
+    margin-bottom: 10px; color: var(--white);
+}
+.payment-result-desc { font-size: 0.875rem; color: var(--white-muted); margin-bottom: 28px; line-height: 1.6; }
 /* ─── PRODUCT MODAL ──────────────────────────────────── */
 .product-modal-overlay {
     position: fixed;
@@ -2816,6 +2869,35 @@ footer {
                 <textarea id="customerNotes" rows="2" placeholder="Ej: Llamar antes de llegar, dejar en portería, etc."></textarea>
             </div>
         </div>
+        <!-- Método de Pago -->
+        <div class="payment-selector">
+            <h4><i class="fas fa-lock"></i> Método de Pago</h4>
+            <div class="payment-options">
+                <label class="payment-option selected" id="optWhatsapp" onclick="Cart.selectPayment('whatsapp')">
+                    <input type="radio" name="paymentMethod" value="whatsapp" checked>
+                    <div class="payment-option-icon" style="color:#25D366"><i class="fab fa-whatsapp"></i></div>
+                    <div class="payment-option-info">
+                        <span class="payment-option-name">WhatsApp</span>
+                        <span class="payment-option-desc">Confirmar por WhatsApp / contra entrega</span>
+                    </div>
+                </label>
+                <label class="payment-option" id="optWompi" onclick="Cart.selectPayment('wompi')">
+                    <input type="radio" name="paymentMethod" value="wompi">
+                    <div class="payment-option-icon" style="color:var(--gold)"><i class="fas fa-credit-card"></i></div>
+                    <div class="payment-option-info">
+                        <span class="payment-option-name">Pago en línea</span>
+                        <span class="payment-option-desc">Tarjeta / PSE / Nequi</span>
+                        <div class="payment-logos">
+                            <span class="payment-logo logo-visa">Visa</span>
+                            <span class="payment-logo logo-mc">MC</span>
+                            <span class="payment-logo logo-pse">PSE</span>
+                            <span class="payment-logo logo-nequi">Nequi</span>
+                            <span class="payment-logo logo-efecty">Efecty</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
     </div>
     <div class="order-modal-footer">
         <button class="btn-secondary" id="backToCartBtn">
@@ -2824,6 +2906,16 @@ footer {
         <button class="btn-primary btn-whatsapp" id="sendWhatsAppBtn">
             <span><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</span>
         </button>
+    </div>
+</div>
+
+<!-- Payment Result Modal (Wompi return) -->
+<div class="payment-result-overlay" id="paymentResultOverlay">
+    <div class="payment-result-box">
+        <div class="payment-result-icon" id="paymentResultIcon"></div>
+        <div class="payment-result-title" id="paymentResultTitle"></div>
+        <div class="payment-result-desc" id="paymentResultDesc"></div>
+        <button class="btn-primary" id="paymentResultBtn" style="display:none;margin:0 auto;padding:12px 36px;">Cerrar</button>
     </div>
 </div>
 
@@ -2865,10 +2957,86 @@ footer {
         anonKey: "sb_publishable_Y9h3IAXvoxnEGSkDhcuZ3g_NCUOakm3"
     };
 </script>
+<!-- Wompi Pagos Config — https://docs.wompi.co/docs/colombia/widget-checkout -->
+<script>
+    window.wompiConfig = {
+        publicKey:       'pub_test_Q25SEybiRtbOPruFJR2TFOnBZxreR7Xt',
+        integritySecret: 'test_integrity_fuOErJeE34QY6L1HuOdGUgYXRxwHxCbo', // Ver instrucciones abajo para obtenerlo
+        env:             'test'
+    };
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>
 <script src="js/cart.js"></script>
 <script src="js/main.js"></script>
+
+<!-- Wompi: verificar retorno del pago -->
+<script>
+(function () {
+    var params = new URLSearchParams(window.location.search);
+    var txId = params.get('id');
+    if (!txId) return;
+
+    // Limpiar URL y vaciar carrito antes de que Cart.init() lo lea
+    history.replaceState({}, '', window.location.pathname);
+    localStorage.removeItem('cart');
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        var overlay = document.getElementById('paymentResultOverlay');
+        var icon    = document.getElementById('paymentResultIcon');
+        var title   = document.getElementById('paymentResultTitle');
+        var desc    = document.getElementById('paymentResultDesc');
+        var btn     = document.getElementById('paymentResultBtn');
+        if (!overlay) return;
+
+        overlay.classList.add('active');
+        if (icon)  icon.innerHTML  = '<i class="fas fa-spinner fa-spin" style="color:var(--gold)"></i>';
+        if (title) title.textContent = 'Verificando pago…';
+        if (desc)  desc.textContent  = 'Por favor espera un momento.';
+        if (btn)   btn.style.display = 'none';
+
+        try {
+            var apiBase = (window.wompiConfig && window.wompiConfig.env === 'prod')
+                ? 'https://production.wompi.co/v1'
+                : 'https://sandbox.wompi.co/v1';
+
+            var res  = await fetch(apiBase + '/transactions/' + txId);
+            var json = await res.json();
+            var tx   = json && json.data;
+            if (!tx) throw new Error('Sin respuesta de Wompi');
+
+            var pending = JSON.parse(localStorage.getItem('wompiPendingRef') || 'null');
+
+            if (tx.status === 'APPROVED') {
+                if (pending && window.supabaseHelpers && window.supabaseHelpers.patchOrder) {
+                    try {
+                        await window.supabaseHelpers.patchOrder(pending.orderId, {
+                            status: 'paid',
+                            paidAt: new Date().toISOString()
+                        });
+                    } catch (e) { console.warn('Patch order failed:', e); }
+                }
+                localStorage.removeItem('wompiPendingRef');
+                if (icon)  icon.innerHTML = '<i class="fas fa-circle-check" style="color:#10b981"></i>';
+                if (title) { title.textContent = '¡Pago aprobado!'; title.style.color = '#10b981'; }
+                if (desc)  desc.textContent = 'Tu pedido fue confirmado. Referencia: ' + (pending ? pending.reference : txId);
+                if (btn)   { btn.textContent = 'Seguir comprando'; btn.style.display = ''; btn.onclick = function(){ overlay.classList.remove('active'); }; }
+            } else {
+                if (icon)  icon.innerHTML = '<i class="fas fa-circle-xmark" style="color:#ef4444"></i>';
+                if (title) { title.textContent = 'Pago no completado'; title.style.color = '#ef4444'; }
+                if (desc)  desc.textContent = 'El pago fue rechazado o cancelado. Puedes intentarlo de nuevo o usar el método WhatsApp.';
+                if (btn)   { btn.textContent = 'Volver a intentar'; btn.style.display = ''; btn.onclick = function(){ overlay.classList.remove('active'); }; }
+            }
+        } catch (err) {
+            console.error('Error verificando pago Wompi:', err);
+            if (icon)  icon.innerHTML = '<i class="fas fa-triangle-exclamation" style="color:var(--gold)"></i>';
+            if (title) title.textContent = 'Error al verificar el pago';
+            if (desc)  desc.textContent  = 'No pudimos verificar el estado del pago. Si fue descontado, contáctanos con este ID: ' + txId;
+            if (btn)   { btn.textContent = 'Cerrar'; btn.style.display = ''; btn.onclick = function(){ overlay.classList.remove('active'); }; }
+        }
+    });
+})();
+</script>
 
 <script>
 // ─── CURSOR ───────────────────────────────────────
